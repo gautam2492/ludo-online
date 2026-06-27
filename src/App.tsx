@@ -67,6 +67,13 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  // Keep peer service callbacks updated to avoid stale React closures
+  useEffect(() => {
+    if (inGame) {
+      peerService.registerCallbacks(handleNetworkMessage);
+    }
+  });
+
   // Sound toggle helper
   const toggleSound = () => {
     const newVal = !soundEnabled;
