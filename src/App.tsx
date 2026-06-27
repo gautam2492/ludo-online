@@ -855,14 +855,21 @@ export const App: React.FC = () => {
           grid-template-columns: 1fr;
           gap: 24px;
           padding: 24px;
-          max-width: 1000px;
+          max-width: 1500px;
           width: 100%;
           margin: 0 auto;
         }
 
         @media (min-width: 768px) {
           .main-game {
-            grid-template-columns: 1.3fr 1fr;
+            grid-template-columns: 2fr 1fr;
+            align-items: start;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .main-game {
+            grid-template-columns: 4fr 1fr;
             align-items: start;
           }
         }
