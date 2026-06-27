@@ -13,7 +13,7 @@ import {
   hasValidMoves,
   hasPlayerWon
 } from './utils/ludoLogic';
-import { Volume2, VolumeX, LogOut, Info, RotateCcw, MessageSquare } from 'lucide-react';
+import { Volume2, VolumeX, LogOut, Info, RotateCcw, ScrollText } from 'lucide-react';
 
 
 const INITIAL_TOKENS = (): Token[] => {
@@ -389,18 +389,7 @@ export const App: React.FC = () => {
         setGameState(msg.payload);
         break;
 
-      case 'CHAT':
-        setGameState((prev) => {
-          const nextState = {
-            ...prev,
-            chat: [...prev.chat, msg.payload]
-          };
-          if (isHost) {
-            peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
-          }
-          return nextState;
-        });
-        break;
+
 
       case 'JOIN_ROOM':
         if (isHost) {
@@ -647,34 +636,7 @@ export const App: React.FC = () => {
     });
   };
 
-  // Send a chat message
-  const sendChatMessage = (text: string) => {
-    const activePlayer = gameState.players.find((p) => p.id === peerService.getPlayerId());
-    const chatMsg: ChatMsg = {
-      id: 'chat_' + Math.random().toString(36).substr(2, 9),
-      senderName: activePlayer?.name || 'Spectator',
-      senderColor: activePlayer?.color,
-      text,
-      timestamp: Date.now(),
-      isSystem: false
-    };
 
-    if (isHost) {
-      setGameState((prev) => {
-        const nextState = {
-          ...prev,
-          chat: [...prev.chat, chatMsg]
-        };
-        peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
-        return nextState;
-      });
-    } else {
-      peerService.sendToHost({
-        type: 'CHAT',
-        payload: chatMsg
-      });
-    }
-  };
 
   // Disconnect / Leave game
   const leaveGame = () => {
@@ -1032,10 +994,10 @@ export const App: React.FC = () => {
             <button
               className={`icon-btn ${showChatMobile ? 'text-blue-400 border-blue-400' : ''}`}
               onClick={() => setShowChatMobile(!showChatMobile)}
-              title="Toggle Chat"
+              title="Toggle Logs"
               style={{ position: 'relative' }}
             >
-              <MessageSquare size={20} />
+              <ScrollText size={20} />
               {/* Simple unread notification dot badge */}
               {gameState.chat.length > 0 && !showChatMobile && (
                 <span
@@ -1176,8 +1138,6 @@ export const App: React.FC = () => {
             <ChatPanel
               chat={gameState.chat}
               players={gameState.players}
-              onSendMessage={sendChatMessage}
-              myPlayerId={myPlayerId}
             />
             
             <div className="glass-panel how-to-play-card" style={{ padding: '16px', fontSize: '0.8rem', color: 'var(--neutral-500)' }}>
