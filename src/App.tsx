@@ -308,8 +308,15 @@ export const App: React.FC = () => {
     if (hasPlayerWon(state.tokens, activePlayer.color)) {
       addSystemLog(`🎉 Player ${activePlayer.name} (${activePlayer.color.toUpperCase()}) has won the game!`);
       audio.playWin();
+      const updatedPlayers = state.players.map((p) => {
+        if (p.color === activePlayer.color) {
+          return { ...p, wins: (p.wins || 0) + 1 };
+        }
+        return p;
+      });
       return {
         ...state,
+        players: updatedPlayers,
         winnerColor: activePlayer.color,
         hasRolled: false
       };
@@ -535,6 +542,46 @@ export const App: React.FC = () => {
         consecutiveSixes: 0,
         turnTimer: prev.players[0].isBot ? null : 30,
         logs: [...prev.logs, 'Host restarted the match!']
+      };
+      peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
+      return nextState;
+    });
+  };
+
+  // Soft Restart: Return to lobby without disconnecting connected peers (Host only)
+  const returnToLobbyState = () => {
+    if (!isHost) return;
+    audio.playMove();
+    setGameState((prev) => {
+      const nextState = {
+        ...prev,
+        tokens: INITIAL_TOKENS(),
+        activePlayerIndex: 0,
+        diceValue: 1,
+        diceState: 'idle' as const,
+        hasRolled: false,
+        winnerColor: null,
+        gameStarted: false,
+        consecutiveSixes: 0,
+        turnTimer: null,
+        isPaused: false,
+        logs: [...prev.logs, 'Host returned the game to the lobby.']
+      };
+      peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
+      return nextState;
+    });
+  };
+
+  // Kick / Remove user (Host only)
+  const kickPlayer = (playerId: string) => {
+    if (!isHost) return;
+    peerService.kickConnection(playerId);
+    setGameState((prev) => {
+      const nextPlayers = prev.players.filter((p) => p.id !== playerId);
+      const nextState = {
+        ...prev,
+        players: nextPlayers,
+        logs: [...prev.logs, 'Player was removed by Host.']
       };
       peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
       return nextState;
@@ -1219,7 +1266,7 @@ export const App: React.FC = () => {
 
       {/* Winner Screen Overlay */}
       {gameState.winnerColor && (
-        <div className="winner-banner animate-winner">
+        <div className="winner-banner animate-winner" style={{ padding: '30px', maxWidth: '420px', width: '90%' }}>
           <h2
             className="winner-title"
             style={{
@@ -1236,17 +1283,65 @@ export const App: React.FC = () => {
           >
             {gameState.players.find((p) => p.color === gameState.winnerColor)?.name} Wins!
           </h2>
-          <p className="text-lg text-slate-300">All tokens successfully made it home.</p>
-          {isHost ? (
-            <button className="glass-button glow-green" onClick={restartGame}>
-              Play Again
-            </button>
-          ) : (
-            <div className="text-sm text-slate-400">Waiting for host to restart match...</div>
-          )}
-          <button className="glass-button" onClick={leaveGame}>
-            <LogOut size={16} /> Return to Lobby
-          </button>
+          <p className="text-sm text-slate-400" style={{ margin: '4px 0 20px 0' }}>All tokens successfully made it home.</p>
+
+          {/* Session Leaderboard */}
+          <div style={{ margin: '10px 0 24px 0', width: '100%' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--neutral-300)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              🏆 Session Leaderboard
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[...gameState.players]
+                .sort((a, b) => (b.wins || 0) - (a.wins || 0))
+                .map((p, idx) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '8px 14px',
+                      background: p.color === gameState.winnerColor ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
+                      borderRadius: '8px',
+                      border: p.color === gameState.winnerColor ? `1px solid var(--ludo-${p.color})` : '1px solid rgba(255,255,255,0.06)'
+                    }}
+                  >
+                    <span style={{ color: `var(--ludo-${p.color})`, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>#{idx + 1}</span>
+                      <span>{p.name}</span>
+                    </span>
+                    <span style={{ fontWeight: 800, color: 'white', fontSize: '0.9rem' }}>
+                      {p.wins || 0} { (p.wins || 0) === 1 ? 'Win' : 'Wins' }
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+            {isHost ? (
+              <>
+                <button className="glass-button glow-green" style={{ width: '100%', padding: '12px' }} onClick={restartGame}>
+                  Play Again (Instant Restart)
+                </button>
+                <button className="glass-button glow-blue" style={{ width: '100%', padding: '12px' }} onClick={returnToLobbyState}>
+                  Configure Match / Add Bots
+                </button>
+                <button className="glass-button text-red-400" style={{ width: '100%', padding: '12px' }} onClick={leaveGame}>
+                  <LogOut size={16} /> Close Game Room
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="text-center text-sm text-slate-400 py-2">
+                  Waiting for host to restart match...
+                </div>
+                <button className="glass-button text-red-400" style={{ width: '100%', padding: '12px' }} onClick={leaveGame}>
+                  <LogOut size={16} /> Leave Room
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 
@@ -1322,6 +1417,7 @@ export const App: React.FC = () => {
           onStartGame={startGame}
           onAddBot={addBot}
           onRemoveBot={removeBot}
+          onKickPlayer={kickPlayer}
           isConnecting={isConnecting}
           errorMsg={errorMsg}
         />
@@ -1488,7 +1584,7 @@ export const App: React.FC = () => {
                         boxShadow: activePlayer ? `0 0 10px var(--ludo-${activePlayer.color})` : 'none'
                       }}
                     />
-                    {activePlayer?.name} {isMyTurn ? '(You)' : ''}
+                    {activePlayer?.name} {isMyTurn ? '(You)' : ''} {activePlayer?.wins ? `(${activePlayer.wins} wins)` : ''}
                   </div>
                 </div>
               </div>

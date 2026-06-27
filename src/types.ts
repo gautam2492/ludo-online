@@ -8,6 +8,7 @@ export interface Player {
   isConnected: boolean;
   isBot: boolean;
   peerId?: string;
+  wins?: number;
 }
 
 export interface Token {

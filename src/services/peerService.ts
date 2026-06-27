@@ -209,6 +209,19 @@ class PeerService {
     return this.peer ? this.peer.id : '';
   }
 
+  public kickConnection(playerId: string) {
+    this.connections.forEach((conn, peer) => {
+      if ((conn as any).playerId === playerId) {
+        try {
+          conn.close();
+        } catch (e) {
+          console.error(e);
+        }
+        this.connections.delete(peer);
+      }
+    });
+  }
+
   public cleanup() {
     this.connections.forEach(conn => conn.close());
     this.connections.clear();

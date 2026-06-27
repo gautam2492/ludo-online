@@ -14,6 +14,7 @@ interface LobbyProps {
   onStartGame: () => void;
   onAddBot: () => void;
   onRemoveBot: (playerId: string) => void;
+  onKickPlayer?: (playerId: string) => void;
   isConnecting: boolean;
   errorMsg: string;
 }
@@ -28,6 +29,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   onStartGame,
   onAddBot,
   onRemoveBot,
+  onKickPlayer,
   isConnecting,
   errorMsg
 }) => {
@@ -419,15 +421,15 @@ export const Lobby: React.FC<LobbyProps> = ({
                           background: `var(--ludo-${p.color})`
                         }}
                       />
-                      <span>{p.name}</span>
+                      <span>{p.name} {p.wins ? `(${p.wins} ${p.wins === 1 ? 'Win' : 'Wins'})` : ''}</span>
                       {p.isHost && <span className="text-xs text-slate-500 font-bold">(Host)</span>}
                       {p.isBot && <span className="bot-badge"><Cpu size={10} /> Bot</span>}
                     </div>
-                    {isHost && p.isBot && (
+                    {isHost && !p.isHost && (
                       <button
                         type="button"
                         className="text-xs text-red-400 hover:text-red-300 bg-none border-none cursor-pointer"
-                        onClick={() => onRemoveBot(p.id)}
+                        onClick={() => p.isBot ? onRemoveBot(p.id) : onKickPlayer?.(p.id)}
                       >
                         Remove
                       </button>
