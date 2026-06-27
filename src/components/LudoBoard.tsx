@@ -173,7 +173,8 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
     <div className="board-container">
       <style>{`
         .board-container {
-          width: 100%;
+          width: min(100%, calc(100vh - 250px));
+          width: min(100%, calc(100dvh - 250px));
           max-width: 520px;
           margin: 0 auto;
           aspect-ratio: 1 / 1;
@@ -185,6 +186,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
 
         @media (min-width: 1024px) {
           .board-container {
+            width: min(100%, calc(100vh - 280px));
             max-width: 800px;
           }
         }

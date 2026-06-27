@@ -70,6 +70,10 @@ export const Lobby: React.FC<LobbyProps> = ({
           width: 100%;
           margin: auto;
           padding: 24px;
+          overflow-y: auto;
+          max-height: calc(100vh - 72px);
+          max-height: calc(100dvh - 72px);
+          box-sizing: border-box;
         }
 
         .lobby-title {

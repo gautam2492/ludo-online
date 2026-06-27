@@ -24,7 +24,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           display: flex;
           flex-direction: column;
           height: 100%;
-          min-height: 400px;
           border-radius: 16px;
           overflow: hidden;
         }

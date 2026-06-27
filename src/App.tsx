@@ -765,13 +765,16 @@ export const App: React.FC = () => {
     <div className="app-container">
       <style>{`
         .app-container {
-          min-height: 100vh;
+          height: 100vh;
+          height: 100dvh;
           display: flex;
           flex-direction: column;
+          overflow: hidden;
         }
 
         .header {
-          padding: 16px 24px;
+          flex-shrink: 0;
+          padding: 12px 24px;
           border-bottom: 1px solid var(--border-light);
           display: flex;
           justify-content: space-between;
@@ -821,6 +824,8 @@ export const App: React.FC = () => {
           max-width: 1500px;
           width: 100%;
           margin: 0 auto;
+          overflow: hidden;
+          box-sizing: border-box;
         }
 
         @media (min-width: 768px) {
@@ -828,30 +833,44 @@ export const App: React.FC = () => {
             grid-template-columns: 2fr 1fr;
             gap: 24px;
             padding: 24px;
-            align-items: start;
+            align-items: center;
           }
         }
 
         @media (min-width: 1024px) {
           .main-game {
             grid-template-columns: 4fr 1fr;
-            align-items: start;
+            align-items: center;
           }
         }
 
         .game-column {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 16px;
+          justify-content: center;
+          align-items: center;
+          max-height: 100%;
+          overflow: hidden;
+          width: 100%;
         }
 
         .game-controls-panel {
-          padding: 20px;
+          padding: 12px 16px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 16px;
+          gap: 12px;
           text-align: center;
+          width: 100%;
+          max-width: 520px;
+          box-sizing: border-box;
+        }
+
+        @media (min-width: 1024px) {
+          .game-controls-panel {
+            max-width: 800px;
+          }
         }
 
         .status-box {
