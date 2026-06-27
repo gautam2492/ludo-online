@@ -303,7 +303,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
         }
       `}</style>
 
-      <svg viewBox={isSixPlayer ? "0 0 30 30" : "0 0 15 15"} className="ludo-board-svg">
+      <svg viewBox={isSixPlayer ? "2.2 2.2 25.6 25.6" : "0 0 15 15"} className="ludo-board-svg">
         {isSixPlayer ? (
           <>
             {/* Draw 6 arms recursively using transform rotation */}
