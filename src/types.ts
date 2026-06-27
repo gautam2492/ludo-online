@@ -43,6 +43,6 @@ export interface GameState {
 }
 
 export interface NetworkMessage {
-  type: 'SYNC_STATE' | 'CHAT' | 'ROLL_DICE' | 'MOVE_TOKEN' | 'RESTART_GAME' | 'JOIN_ROOM' | 'LEAVE_ROOM' | 'BOT_CONFIG' | 'PAUSE_GAME';
+  type: 'SYNC_STATE' | 'CHAT' | 'ROLL_DICE' | 'MOVE_TOKEN' | 'RESTART_GAME' | 'JOIN_ROOM' | 'LEAVE_ROOM' | 'BOT_CONFIG' | 'PAUSE_GAME' | 'SEND_EMOJI';
   payload: any;
 }

@@ -35,6 +35,8 @@ export const App: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(audio.isEnabled());
   const [voiceActive, setVoiceActive] = useState(false);
+  const [micMuted, setMicMuted] = useState(false);
+  const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; color: PlayerColor; emoji: string }[]>([]);
 
   // Voice Chat refs
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -121,10 +123,43 @@ export const App: React.FC = () => {
     audio.setEnabled(newVal);
   };
 
+  const toggleMicMute = () => {
+    const nextMuted = !micMuted;
+    setMicMuted(nextMuted);
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach((track) => {
+        track.enabled = !nextMuted;
+      });
+    }
+  };
+
+  const sendEmoji = (emoji: string) => {
+    const myColor = gameState.players.find((p) => p.id === peerService.getPlayerId())?.color || 'red';
+    triggerFloatingEmoji(myColor, emoji);
+
+    peerService.broadcast({
+      type: 'SEND_EMOJI',
+      payload: { color: myColor, emoji }
+    });
+  };
+
+  const triggerFloatingEmoji = (color: PlayerColor, emoji: string) => {
+    const id = 'emoji_' + Math.random().toString(36).substr(2, 9);
+    setFloatingEmojis((prev) => [...prev, { id, color, emoji }]);
+    
+    // Minor beep effect for visual emoji popup feedback
+    audio.playMove();
+
+    setTimeout(() => {
+      setFloatingEmojis((prev) => prev.filter((item) => item.id !== id));
+    }, 2000);
+  };
+
   // Start Voice Chat: request mic, and call everyone else
   const startVoiceChat = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getAudioTracks().forEach(track => track.enabled = !micMuted);
       localStreamRef.current = stream;
       setVoiceActive(true);
 
@@ -616,6 +651,10 @@ export const App: React.FC = () => {
         }
         break;
       
+      case 'SEND_EMOJI':
+        triggerFloatingEmoji(msg.payload.color, msg.payload.emoji);
+        break;
+
       default:
         break;
     }
@@ -1142,6 +1181,40 @@ export const App: React.FC = () => {
           text-align: center;
         }
 
+        .emoji-bubble {
+          position: absolute;
+          font-size: 2.5rem;
+          pointer-events: none;
+          animation: floatUpFade 2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+          z-index: 60;
+        }
+
+        .emoji-selector-btn {
+          transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .emoji-selector-btn:hover {
+          transform: scale(1.35) rotate(5deg);
+        }
+
+        .emoji-selector-btn:active {
+          transform: scale(0.9);
+        }
+
+        @keyframes floatUpFade {
+          0% {
+            transform: translateY(0) scale(0.4);
+            opacity: 0;
+          }
+          15% {
+            transform: translateY(-15px) scale(1.3);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-90px) scale(0.9);
+            opacity: 0;
+          }
+        }
       `}</style>
 
       {/* Winner Screen Overlay */}
@@ -1182,27 +1255,51 @@ export const App: React.FC = () => {
         <h1 className="logo">LUDO P2P</h1>
         <div className="header-controls">
           {inGame && roomId !== 'OFFLINE' && (
-            <button
-              className={`icon-btn ${voiceActive ? 'voice-active-pill animate-pulse' : ''}`}
-              onClick={voiceActive ? stopVoiceChat : startVoiceChat}
-              title={voiceActive ? "Turn Off Voice Chat" : "Turn On Voice Chat"}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                background: voiceActive ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
-                borderColor: voiceActive ? 'var(--ludo-green)' : 'var(--border-light)',
-                borderRadius: '20px',
-                padding: '4px 10px',
-                fontSize: '0.8rem',
-                color: voiceActive ? '#4ade80' : 'inherit'
-              }}
-            >
-              {voiceActive ? <Mic size={18} /> : <MicOff size={18} />}
-              <span>{voiceActive ? "Voice On" : "Voice Off"}</span>
-            </button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button
+                className={`icon-btn ${voiceActive ? 'voice-active-pill animate-pulse' : ''}`}
+                onClick={voiceActive ? stopVoiceChat : startVoiceChat}
+                title={voiceActive ? "Turn Off Voice Chat" : "Turn On Voice Chat"}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: voiceActive ? 'rgba(34, 197, 94, 0.1)' : 'transparent',
+                  borderColor: voiceActive ? 'var(--ludo-green)' : 'var(--border-light)',
+                  borderRadius: '20px',
+                  padding: '4px 10px',
+                  fontSize: '0.8rem',
+                  color: voiceActive ? '#4ade80' : 'inherit'
+                }}
+              >
+                {voiceActive ? <Mic size={16} /> : <MicOff size={16} />}
+                <span>{voiceActive ? "Voice On" : "Voice Off"}</span>
+              </button>
+              
+              {voiceActive && (
+                <button
+                  className="icon-btn"
+                  onClick={toggleMicMute}
+                  title={micMuted ? "Unmute Microphone" : "Mute Microphone"}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: micMuted ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                    borderColor: micMuted ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)',
+                    borderRadius: '20px',
+                    padding: '4px 10px',
+                    fontSize: '0.8rem',
+                    color: micMuted ? '#f87171' : '#4ade80'
+                  }}
+                >
+                  {micMuted ? <MicOff size={16} /> : <Mic size={16} />}
+                  <span>{micMuted ? "Muted" : "Mute"}</span>
+                </button>
+              )}
+            </div>
           )}
-          <button className="icon-btn" onClick={toggleSound} title="Toggle Sounds">
+          <button className="icon-btn" onClick={toggleSound} title="Toggle Sound FX">
             {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
           </button>
           {inGame && (
@@ -1240,6 +1337,31 @@ export const App: React.FC = () => {
                 hasRolled={gameState.hasRolled}
                 onTokenClick={triggerMoveIntent}
               />
+              {floatingEmojis.map((item) => {
+                const style: React.CSSProperties = {
+                  position: 'absolute',
+                  zIndex: 60,
+                  pointerEvents: 'none'
+                };
+                if (item.color === 'red') {
+                  style.top = '20%';
+                  style.left = '20%';
+                } else if (item.color === 'green') {
+                  style.top = '20%';
+                  style.right = '20%';
+                } else if (item.color === 'yellow') {
+                  style.bottom = '20%';
+                  style.right = '20%';
+                } else {
+                  style.bottom = '20%';
+                  style.left = '20%';
+                }
+                return (
+                  <span key={item.id} className="emoji-bubble" style={style}>
+                    {item.emoji}
+                  </span>
+                );
+              })}
               {gameState.isPaused && (
                 <div
                   style={{
@@ -1273,6 +1395,39 @@ export const App: React.FC = () => {
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Emoji Selection Bar */}
+            <div
+              className="glass-panel"
+              style={{
+                display: 'flex',
+                gap: 8,
+                padding: '6px 12px',
+                borderRadius: '12px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%',
+                maxWidth: 400,
+                boxSizing: 'border-box'
+              }}
+            >
+              {['😂', '😮', '😢', '😠', '🎉', '👍', '🔥'].map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => sendEmoji(emoji)}
+                  style={{
+                    fontSize: '1.4rem',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px 8px'
+                  }}
+                  className="emoji-selector-btn"
+                >
+                  {emoji}
+                </button>
+              ))}
             </div>
 
             <div className="game-controls-panel glass-panel">
