@@ -826,6 +826,8 @@ export const App: React.FC = () => {
           margin: 0 auto;
           overflow: hidden;
           box-sizing: border-box;
+          height: calc(100vh - 64px);
+          height: calc(100dvh - 64px);
         }
 
         @media (min-width: 768px) {
@@ -923,12 +925,16 @@ export const App: React.FC = () => {
         .chat-column-wrapper {
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 16px;
+          height: 100%;
+          max-height: 100%;
+          overflow: hidden;
+          box-sizing: border-box;
         }
 
         .drawer-backdrop {
           position: fixed;
-          top: 72px;
+          top: 64px;
           left: 0;
           right: 0;
           bottom: 0;
@@ -941,7 +947,7 @@ export const App: React.FC = () => {
         @media (max-width: 1023px) {
           .chat-column-wrapper {
             position: fixed;
-            top: 72px;
+            top: 64px;
             right: 0;
             bottom: 0;
             width: 340px;
@@ -954,6 +960,8 @@ export const App: React.FC = () => {
             padding: 16px;
             box-shadow: -10px 0 30px rgba(0,0,0,0.5);
             overflow-y: auto;
+            height: calc(100vh - 64px);
+            height: calc(100dvh - 64px);
           }
 
           .chat-column-wrapper.open {
