@@ -121,7 +121,7 @@ export const App: React.FC = () => {
     audio.setEnabled(newVal);
   };
 
-  // Start Voice Chat: request mic, listen to calls, and call everyone else
+  // Start Voice Chat: request mic, and call everyone else
   const startVoiceChat = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -131,20 +131,20 @@ export const App: React.FC = () => {
       const peer = peerService.getPeer();
       if (!peer) return;
 
-      // Listen for incoming media calls from others
-      peer.on('call', (call) => {
-        if (!localStreamRef.current) return;
-        call.answer(localStreamRef.current);
-        call.on('stream', (remoteStream) => {
-          playRemoteStream(call.peer, remoteStream);
-        });
-        activeCallsRef.current.set(call.peer, call);
-      });
-
       // Call all other connected human players in the room
       gameState.players.forEach((p) => {
         if (p.isBot || p.id === peerService.getPlayerId() || !p.peerId) return;
-        if (activeCallsRef.current.has(p.peerId)) return;
+        
+        // Recreate connection if one already exists to supply our newly activated localStream
+        const existingCall = activeCallsRef.current.get(p.peerId);
+        if (existingCall) {
+          try {
+            existingCall.close();
+          } catch (e) {
+            console.error(e);
+          }
+          activeCallsRef.current.delete(p.peerId);
+        }
 
         const call = peer.call(p.peerId, stream);
         call.on('stream', (remoteStream) => {
@@ -194,6 +194,34 @@ export const App: React.FC = () => {
     audioEl.srcObject = remoteStream;
     audioEl.play().catch((e) => console.error('Audio playback failed:', e));
   };
+
+  // Listen for incoming voice calls globally as soon as peer is active
+  useEffect(() => {
+    const peer = peerService.getPeer();
+    if (!peer) return;
+
+    const handleIncomingCall = (call: any) => {
+      console.log('Incoming voice call from:', call.peer);
+      // Answer the call. If voice is active, answer with local stream, else receive-only
+      if (localStreamRef.current) {
+        call.answer(localStreamRef.current);
+      } else {
+        call.answer();
+      }
+
+      call.on('stream', (remoteStream: MediaStream) => {
+        playRemoteStream(call.peer, remoteStream);
+      });
+
+      activeCallsRef.current.set(call.peer, call);
+    };
+
+    peer.on('call', handleIncomingCall);
+
+    return () => {
+      peer.off('call', handleIncomingCall);
+    };
+  }, [roomId, voiceActive]);
 
   // Auto-connect voice chat calls when new players join the room
   useEffect(() => {
@@ -611,7 +639,8 @@ export const App: React.FC = () => {
           color: hostColor,
           isHost: true,
           isConnected: true,
-          isBot: false
+          isBot: false,
+          peerId: id
         };
 
         setGameState((prev) => ({
@@ -644,7 +673,8 @@ export const App: React.FC = () => {
         color: playerColor,
         isHost: true,
         isConnected: true,
-        isBot: false
+        isBot: false,
+        peerId: id
       };
 
       setGameState((prev) => ({
