@@ -16,7 +16,7 @@ import { Volume2, VolumeX, LogOut, RotateCcw, Mic, MicOff, Pause, Play } from 'l
 
 
 const INITIAL_TOKENS = (): Token[] => {
-  const colors: PlayerColor[] = ['red', 'green', 'yellow', 'blue'];
+  const colors: PlayerColor[] = ['red', 'green', 'yellow', 'blue', 'orange', 'purple'];
   const tokens: Token[] = [];
   colors.forEach((color) => {
     for (let id = 0; id < 4; id++) {
@@ -306,7 +306,8 @@ export const App: React.FC = () => {
 
     // Check if current player has won
     const activePlayer = state.players[state.activePlayerIndex];
-    if (hasPlayerWon(state.tokens, activePlayer.color)) {
+    const isSixPlayer = state.players.length > 4;
+    if (hasPlayerWon(state.tokens, activePlayer.color, isSixPlayer)) {
       addSystemLog(`🎉 Player ${activePlayer.name} (${activePlayer.color.toUpperCase()}) has won the game!`);
       audio.playWin();
       const updatedPlayers = state.players.map((p) => {
@@ -417,7 +418,8 @@ export const App: React.FC = () => {
         }
 
         // If no moves are possible, check if we rolled a 6
-        const movesPossible = hasValidMoves(prev.tokens, finalVal, activePl.color);
+        const isSixPlayer = prev.players.length > 4;
+        const movesPossible = hasValidMoves(prev.tokens, finalVal, activePl.color, isSixPlayer);
         if (!movesPossible) {
           nextState.statusMessage = `${activePl.name} rolled a ${finalVal} but has no valid moves!`;
           setTimeout(() => {
@@ -460,7 +462,8 @@ export const App: React.FC = () => {
     if (tokenIndex === -1) return;
     const token = state.tokens[tokenIndex];
 
-    if (!isValidMove(token, state.diceValue, activePlayer.color)) return;
+    const isSixPlayer = state.players.length > 4;
+    if (!isValidMove(token, state.diceValue, activePlayer.color, isSixPlayer)) return;
 
     // Build the step-by-step positions
     const steps: number[] = [];
@@ -481,7 +484,8 @@ export const App: React.FC = () => {
 
         setGameState((prev) => {
           const finalPos = steps[steps.length - 1];
-          const captures = getCapturedTokens(token, finalPos, prev.tokens);
+          const isSixPl = prev.players.length > 4;
+          const captures = getCapturedTokens(token, finalPos, prev.tokens, isSixPl);
           let capturedFlag = false;
 
           const finalTokens = prev.tokens.map((t, idx) => {
@@ -496,7 +500,8 @@ export const App: React.FC = () => {
             return t;
           });
 
-          const reachedGoal = finalPos === 57;
+          const goalPos = isSixPl ? 83 : 57;
+          const reachedGoal = finalPos === goalPos;
           let logMsg = `${activePlayer.name} moved token ${tokenId + 1} to space ${finalPos}`;
           if (reachedGoal) {
             logMsg = `🎉 ${activePlayer.name}'s token ${tokenId + 1} got home!`;
@@ -652,7 +657,7 @@ export const App: React.FC = () => {
 
             // Find first available color
             const assignedColors = prev.players.map((p) => p.color);
-            const colorsList: PlayerColor[] = ['red', 'green', 'yellow', 'blue'];
+            const colorsList: PlayerColor[] = ['red', 'green', 'yellow', 'blue', 'orange', 'purple'];
             const freeColor = colorsList.find((c) => !assignedColors.includes(c)) || 'red';
 
             // Add new player
@@ -875,10 +880,10 @@ export const App: React.FC = () => {
   const addBot = () => {
     if (!isHost) return;
     setGameState((prev) => {
-      if (prev.players.length >= 4) return prev;
+      if (prev.players.length >= 6) return prev;
       
       const assignedColors = prev.players.map((p) => p.color);
-      const colorsList: PlayerColor[] = ['red', 'green', 'yellow', 'blue'];
+      const colorsList: PlayerColor[] = ['red', 'green', 'yellow', 'blue', 'orange', 'purple'];
       const freeColor = colorsList.find((c) => !assignedColors.includes(c)) || 'red';
 
       const botNames = ['RoboRoller', 'ByteBiter', 'CyberPawn', 'AI-Player'];
@@ -999,8 +1004,9 @@ export const App: React.FC = () => {
     // Bot moving logic
     if (gameState.hasRolled && gameState.diceState === 'rolled') {
       const timer = setTimeout(() => {
+        const isSixPlayer = gameState.players.length > 4;
         const myTokens = gameState.tokens.filter((t) => t.color === activePlayer.color);
-        const validTokens = myTokens.filter((t) => isValidMove(t, gameState.diceValue, activePlayer.color));
+        const validTokens = myTokens.filter((t) => isValidMove(t, gameState.diceValue, activePlayer.color, isSixPlayer));
 
         if (validTokens.length === 0) return; // Will auto-advance in rollDice handler
 
@@ -1010,10 +1016,10 @@ export const App: React.FC = () => {
 
         validTokens.forEach((token) => {
           let score = 0;
-          const nextPos = getNextPosition(token, gameState.diceValue);
+          const nextPos = getNextPosition(token, gameState.diceValue, isSixPlayer);
 
           // 1. Capture opponent is highest priority
-          const captures = getCapturedTokens(token, nextPos, gameState.tokens);
+          const captures = getCapturedTokens(token, nextPos, gameState.tokens, isSixPlayer);
           if (captures.length > 0) {
             score += 1000;
           }
@@ -1024,12 +1030,14 @@ export const App: React.FC = () => {
           }
 
           // 3. Reaching goal
-          if (nextPos === 57) {
+          const goalPos = isSixPlayer ? 83 : 57;
+          if (nextPos === goalPos) {
             score += 400;
           }
 
           // 4. Moving closer to goal path
-          if (token.position < 52 && nextPos >= 52) {
+          const homeStart = isSixPlayer ? 78 : 52;
+          if (token.position < homeStart && nextPos >= homeStart) {
             score += 200;
           }
 
@@ -1472,6 +1480,7 @@ export const App: React.FC = () => {
                 diceValue={gameState.diceValue}
                 hasRolled={gameState.hasRolled}
                 onTokenClick={triggerMoveIntent}
+                playersCount={gameState.players.length}
               />
               {floatingEmojis.map((item) => {
                 const style: React.CSSProperties = {

@@ -38,6 +38,14 @@
   --ludo-blue-glow: hsla(217, 91%, 56%, 0.3);
   --ludo-blue-dark: hsl(217, 91%, 36%);
 
+  --ludo-orange: hsl(24, 95%, 55%);
+  --ludo-orange-glow: hsla(24, 95%, 55%, 0.3);
+  --ludo-orange-dark: hsl(24, 95%, 35%);
+
+  --ludo-purple: hsl(271, 85%, 60%);
+  --ludo-purple-glow: hsla(271, 85%, 60%, 0.3);
+  --ludo-purple-dark: hsl(271, 85%, 38%);
+
   --neutral-300: hsl(215, 15%, 75%);
   --neutral-500: hsl(215, 15%, 50%);
   --neutral-800: hsl(215, 20%, 15%);
@@ -135,6 +143,8 @@ body {
 .glow-green { box-shadow: 0 0 15px var(--ludo-green-glow); }
 .glow-yellow { box-shadow: 0 0 15px var(--ludo-yellow-glow); }
 .glow-blue { box-shadow: 0 0 15px var(--ludo-blue-glow); }
+.glow-orange { box-shadow: 0 0 15px var(--ludo-orange-glow); }
+.glow-purple { box-shadow: 0 0 15px var(--ludo-purple-glow); }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {

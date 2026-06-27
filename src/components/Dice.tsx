@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { audio } from '../utils/audio';
+import type { PlayerColor } from '../types';
 
 interface DiceProps {
   value: number;
   isRolling: boolean;
   onClick: () => void;
   disabled: boolean;
-  playerColor: 'red' | 'green' | 'yellow' | 'blue' | null;
+  playerColor: PlayerColor | null;
 }
 
 export const Dice: React.FC<DiceProps> = ({ value, isRolling, onClick, disabled, playerColor }) => {
@@ -38,7 +39,9 @@ export const Dice: React.FC<DiceProps> = ({ value, isRolling, onClick, disabled,
     red: 'var(--ludo-red)',
     green: 'var(--ludo-green)',
     yellow: 'var(--ludo-yellow)',
-    blue: 'var(--ludo-blue)'
+    blue: 'var(--ludo-blue)',
+    orange: 'var(--ludo-orange)',
+    purple: 'var(--ludo-purple)'
   };
 
   const activeColor = playerColor ? colorMap[playerColor] : 'var(--neutral-500)';
@@ -139,7 +142,7 @@ export const Dice: React.FC<DiceProps> = ({ value, isRolling, onClick, disabled,
         onClick={() => !disabled && !isRolling && onClick()}
         style={{
           ['--dice-border-color' as any]: activeColor,
-          ['--dice-glow-color' as any]: playerColor ? `hsla(${playerColor === 'red' ? 346 : playerColor === 'green' ? 142 : playerColor === 'yellow' ? 45 : 217}, 91%, 56%, 0.2)` : 'rgba(255,255,255,0.05)',
+          ['--dice-glow-color' as any]: playerColor ? `var(--ludo-${playerColor}-glow)` : 'rgba(255,255,255,0.05)',
           ['--dice-dot-color' as any]: activeColor
         }}
       >

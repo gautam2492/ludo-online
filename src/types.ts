@@ -1,4 +1,4 @@
-export type PlayerColor = 'red' | 'green' | 'yellow' | 'blue';
+export type PlayerColor = 'red' | 'green' | 'yellow' | 'blue' | 'orange' | 'purple';
 
 export interface Player {
   id: string;

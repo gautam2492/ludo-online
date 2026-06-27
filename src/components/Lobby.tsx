@@ -39,7 +39,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [copied, setCopied] = useState(false);
   const [mode, setMode] = useState<'selection' | 'hosting' | 'joining'>('selection');
 
-  const colors: PlayerColor[] = ['red', 'green', 'yellow', 'blue'];
+  const colors: PlayerColor[] = ['red', 'green', 'yellow', 'blue', 'orange', 'purple'];
   
   const handleHostClick = () => {
     if (!name.trim()) return;
@@ -139,7 +139,7 @@ export const Lobby: React.FC<LobbyProps> = ({
 
         .color-selector {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 12px;
         }
 
@@ -155,10 +155,12 @@ export const Lobby: React.FC<LobbyProps> = ({
           justify-content: center;
         }
 
-        .color-option.red { background: var(--ludo-red-dark); }
-        .color-option.green { background: var(--ludo-green-dark); }
-        .color-option.yellow { background: var(--ludo-yellow-dark); }
-        .color-option.blue { background: var(--ludo-blue-dark); }
+        .color-option.red { background: var(--ludo-red-dark); color: var(--ludo-red); }
+        .color-option.green { background: var(--ludo-green-dark); color: var(--ludo-green); }
+        .color-option.yellow { background: var(--ludo-yellow-dark); color: var(--ludo-yellow); }
+        .color-option.blue { background: var(--ludo-blue-dark); color: var(--ludo-blue); }
+        .color-option.orange { background: var(--ludo-orange-dark); color: var(--ludo-orange); }
+        .color-option.purple { background: var(--ludo-purple-dark); color: var(--ludo-purple); }
 
         .color-option.selected {
           border-color: white;
@@ -439,7 +441,7 @@ export const Lobby: React.FC<LobbyProps> = ({
               </div>
             </div>
 
-            {isHost && players.length < 4 && (
+            {isHost && players.length < 6 && (
               <div className="bot-controls">
                 <button
                   type="button"
