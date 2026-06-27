@@ -7,6 +7,7 @@ export interface Player {
   isHost: boolean;
   isConnected: boolean;
   isBot: boolean;
+  peerId?: string;
 }
 
 export interface Token {
@@ -38,9 +39,10 @@ export interface GameState {
   gameStarted: boolean;
   consecutiveSixes: number;
   turnTimer: number | null;
+  isPaused?: boolean;
 }
 
 export interface NetworkMessage {
-  type: 'SYNC_STATE' | 'CHAT' | 'ROLL_DICE' | 'MOVE_TOKEN' | 'RESTART_GAME' | 'JOIN_ROOM' | 'LEAVE_ROOM' | 'BOT_CONFIG';
+  type: 'SYNC_STATE' | 'CHAT' | 'ROLL_DICE' | 'MOVE_TOKEN' | 'RESTART_GAME' | 'JOIN_ROOM' | 'LEAVE_ROOM' | 'BOT_CONFIG' | 'PAUSE_GAME';
   payload: any;
 }

@@ -50,6 +50,14 @@ class PeerService {
     });
   }
 
+  public initOffline(name: string, onReady: (id: string) => void) {
+    this.cleanup();
+    this.isHostFlag = true;
+    this.myName = name;
+    this.roomId = 'OFFLINE';
+    onReady(this.roomId);
+  }
+
   public initGuest(roomId: string, name: string, onConnected: () => void, onError: (err: any) => void) {
     this.cleanup();
     this.isHostFlag = false;
@@ -71,7 +79,8 @@ class PeerService {
           type: 'JOIN_ROOM',
           payload: {
             id: this.myPlayerId,
-            name: this.myName
+            name: this.myName,
+            peerId: this.getPeerId()
           }
         });
       };
@@ -190,6 +199,14 @@ class PeerService {
 
   public getConnectedClientsCount(): number {
     return this.connections.size;
+  }
+
+  public getPeer(): Peer | null {
+    return this.peer;
+  }
+
+  public getPeerId(): string {
+    return this.peer ? this.peer.id : '';
   }
 
   public cleanup() {

@@ -7,6 +7,7 @@ import { audio } from '../utils/audio';
 interface LobbyProps {
   onHost: (name: string, color: PlayerColor) => void;
   onJoin: (name: string, color: PlayerColor, roomId: string) => void;
+  onOffline: (name: string, color: PlayerColor) => void;
   players: Player[];
   roomId: string;
   isHost: boolean;
@@ -20,6 +21,7 @@ interface LobbyProps {
 export const Lobby: React.FC<LobbyProps> = ({
   onHost,
   onJoin,
+  onOffline,
   players,
   roomId,
   isHost,
@@ -42,6 +44,14 @@ export const Lobby: React.FC<LobbyProps> = ({
     localStorage.setItem('ludo_player_name', name.trim());
     audio.playMove();
     onHost(name.trim(), selectedColor);
+    setMode('hosting');
+  };
+
+  const handleOfflineClick = () => {
+    if (!name.trim()) return;
+    localStorage.setItem('ludo_player_name', name.trim());
+    audio.playMove();
+    onOffline(name.trim(), selectedColor);
     setMode('hosting');
   };
 
@@ -290,7 +300,7 @@ export const Lobby: React.FC<LobbyProps> = ({
               </div>
             </div>
 
-            <div className="action-row">
+            <div className="action-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <button
                 type="button"
                 className="glass-button glow-blue"
@@ -306,6 +316,18 @@ export const Lobby: React.FC<LobbyProps> = ({
                 onClick={() => setMode('joining')}
               >
                 Join Friends
+              </button>
+            </div>
+            
+            <div style={{ marginTop: '12px' }}>
+              <button
+                type="button"
+                className="glass-button glow-green"
+                style={{ width: '100%', padding: '12px 16px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                disabled={!name.trim()}
+                onClick={handleOfflineClick}
+              >
+                <Cpu size={16} /> Play Offline (vs. Bots)
               </button>
             </div>
           </>
@@ -355,24 +377,32 @@ export const Lobby: React.FC<LobbyProps> = ({
         {(mode === 'hosting' || roomId) && (
           <>
             <div className="input-group">
-              <label className="input-label">Share Room ID with Friends</label>
-              <div className="room-display">
-                {roomId ? (
-                  <>
-                    <span>{roomId}</span>
-                    <button
-                      type="button"
-                      className="glass-button"
-                      style={{ padding: '6px 12px', fontSize: '0.8rem' }}
-                      onClick={handleCopyLink}
-                    >
-                      {copied ? <Check size={14} /> : <Copy size={14} />}
-                    </button>
-                  </>
-                ) : (
-                  <span className="text-sm text-slate-500">Generating ID...</span>
-                )}
-              </div>
+              {roomId === 'OFFLINE' ? (
+                <div className="room-display" style={{ background: 'rgba(34, 197, 94, 0.1)', borderColor: 'rgba(34, 197, 94, 0.2)', justifyContent: 'center', padding: '12px' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#4ade80', fontWeight: 800 }}>🎮 OFFLINE SINGLE PLAYER</span>
+                </div>
+              ) : (
+                <>
+                  <label className="input-label">Share Room ID with Friends</label>
+                  <div className="room-display">
+                    {roomId ? (
+                      <>
+                        <span>{roomId}</span>
+                        <button
+                          type="button"
+                          className="glass-button"
+                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                          onClick={handleCopyLink}
+                        >
+                          {copied ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                      </>
+                    ) : (
+                      <span className="text-slate-500 animate-pulse">Generating Room ID...</span>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="input-group">

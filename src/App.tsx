@@ -12,7 +12,7 @@ import {
   hasValidMoves,
   hasPlayerWon
 } from './utils/ludoLogic';
-import { Volume2, VolumeX, LogOut, RotateCcw } from 'lucide-react';
+import { Volume2, VolumeX, LogOut, RotateCcw, Mic, MicOff, Pause, Play } from 'lucide-react';
 
 
 const INITIAL_TOKENS = (): Token[] => {
@@ -34,6 +34,11 @@ export const App: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(audio.isEnabled());
+  const [voiceActive, setVoiceActive] = useState(false);
+
+  // Voice Chat refs
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const activeCallsRef = useRef<Map<string, any>>(new Map());
 
   // Game state
   const [gameState, setGameState] = useState<GameState>({
@@ -49,7 +54,8 @@ export const App: React.FC = () => {
     gameStarted: false,
     statusMessage: 'Welcome to Ludo! Host a room or join one to start.',
     consecutiveSixes: 0,
-    turnTimer: null
+    turnTimer: null,
+    isPaused: false
   });
 
   // Reference to game state for event handlers / callbacks
@@ -76,7 +82,7 @@ export const App: React.FC = () => {
 
   // Turn Timer countdown (Host only)
   useEffect(() => {
-    if (!isHost || !gameState.gameStarted || gameState.winnerColor) return;
+    if (!isHost || !gameState.gameStarted || gameState.winnerColor || gameState.isPaused) return;
     if (gameState.turnTimer === null) return;
 
     const timer = setInterval(() => {
@@ -106,7 +112,7 @@ export const App: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isHost, gameState.gameStarted, gameState.winnerColor, gameState.activePlayerIndex, gameState.turnTimer === null]);
+  }, [isHost, gameState.gameStarted, gameState.winnerColor, gameState.activePlayerIndex, gameState.turnTimer === null, gameState.isPaused]);
 
   // Sound toggle helper
   const toggleSound = () => {
@@ -114,6 +120,98 @@ export const App: React.FC = () => {
     setSoundEnabled(newVal);
     audio.setEnabled(newVal);
   };
+
+  // Start Voice Chat: request mic, listen to calls, and call everyone else
+  const startVoiceChat = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStreamRef.current = stream;
+      setVoiceActive(true);
+
+      const peer = peerService.getPeer();
+      if (!peer) return;
+
+      // Listen for incoming media calls from others
+      peer.on('call', (call) => {
+        if (!localStreamRef.current) return;
+        call.answer(localStreamRef.current);
+        call.on('stream', (remoteStream) => {
+          playRemoteStream(call.peer, remoteStream);
+        });
+        activeCallsRef.current.set(call.peer, call);
+      });
+
+      // Call all other connected human players in the room
+      gameState.players.forEach((p) => {
+        if (p.isBot || p.id === peerService.getPlayerId() || !p.peerId) return;
+        if (activeCallsRef.current.has(p.peerId)) return;
+
+        const call = peer.call(p.peerId, stream);
+        call.on('stream', (remoteStream) => {
+          playRemoteStream(p.peerId!, remoteStream);
+        });
+        activeCallsRef.current.set(p.peerId, call);
+      });
+    } catch (err) {
+      console.error('Failed to get mic stream for Voice Chat:', err);
+      alert('Voice Chat error: Could not access microphone. Please check permissions.');
+      setVoiceActive(false);
+    }
+  };
+
+  // Stop Voice Chat: stop tracks, close calls, remove DOM elements
+  const stopVoiceChat = () => {
+    setVoiceActive(false);
+
+    activeCallsRef.current.forEach((call) => {
+      try {
+        call.close();
+      } catch (e) {
+        console.error(e);
+      }
+    });
+    activeCallsRef.current.clear();
+
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
+    }
+
+    const audios = document.querySelectorAll('audio[id^="audio-"]');
+    audios.forEach((el) => el.remove());
+  };
+
+  // Play remote peer stream using a hidden HTML audio element
+  const playRemoteStream = (peerId: string, remoteStream: MediaStream) => {
+    let audioEl = document.getElementById(`audio-${peerId}`) as HTMLAudioElement;
+    if (!audioEl) {
+      audioEl = document.createElement('audio');
+      audioEl.id = `audio-${peerId}`;
+      audioEl.autoplay = true;
+      audioEl.style.display = 'none';
+      document.body.appendChild(audioEl);
+    }
+    audioEl.srcObject = remoteStream;
+    audioEl.play().catch((e) => console.error('Audio playback failed:', e));
+  };
+
+  // Auto-connect voice chat calls when new players join the room
+  useEffect(() => {
+    if (!voiceActive || !localStreamRef.current) return;
+    const peer = peerService.getPeer();
+    if (!peer) return;
+
+    gameState.players.forEach((p) => {
+      if (p.isBot || p.id === peerService.getPlayerId() || !p.peerId) return;
+      if (activeCallsRef.current.has(p.peerId)) return;
+
+      const call = peer.call(p.peerId, localStreamRef.current!);
+      call.on('stream', (remoteStream) => {
+        playRemoteStream(p.peerId!, remoteStream);
+      });
+      activeCallsRef.current.set(p.peerId, call);
+    });
+  }, [gameState.players, voiceActive]);
 
   // Helper to log messages to the chat and log streams
   const addSystemLog = (text: string) => {
@@ -391,16 +489,23 @@ export const App: React.FC = () => {
 
       case 'JOIN_ROOM':
         if (isHost) {
-          const { id, name } = msg.payload;
+          const { id, name, peerId } = msg.payload;
           setGameState((prev) => {
             // Check if player already exists
             const existingPlayer = prev.players.find((p) => p.id === id);
             if (existingPlayer) {
-              // Resend state to ensure they sync up
+              // Update connection state and peerId if needed
+              const updatedPlayers = prev.players.map((p) => {
+                if (p.id === id) {
+                  return { ...p, isConnected: true, peerId };
+                }
+                return p;
+              });
+              const nextState = { ...prev, players: updatedPlayers };
               setTimeout(() => {
-                peerService.broadcast({ type: 'SYNC_STATE', payload: prev });
+                peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
               }, 100);
-              return prev;
+              return nextState;
             }
 
             // Find first available color
@@ -415,7 +520,8 @@ export const App: React.FC = () => {
               color: freeColor,
               isHost: false,
               isConnected: true,
-              isBot: false
+              isBot: false,
+              peerId
             };
 
             const updatedPlayers = [...prev.players, newPlayer];
@@ -514,7 +620,6 @@ export const App: React.FC = () => {
           chat: [],
           gameStarted: false
         }));
-
         peerService.registerCallbacks(handleNetworkMessage);
       },
       (_err) => {
@@ -522,6 +627,51 @@ export const App: React.FC = () => {
         setIsConnecting(false);
       }
     );
+  };
+
+  // Play Offline Single Player mode
+  const playOffline = (playerName: string, playerColor: PlayerColor) => {
+    setIsConnecting(true);
+    peerService.initOffline(playerName, (id) => {
+      setRoomId(id);
+      setIsHost(true);
+      setIsConnecting(false);
+      setInGame(true);
+
+      const localPlayer: Player = {
+        id: peerService.getPlayerId(),
+        name: playerName,
+        color: playerColor,
+        isHost: true,
+        isConnected: true,
+        isBot: false
+      };
+
+      setGameState((prev) => ({
+        ...prev,
+        players: [localPlayer],
+        chat: [],
+        gameStarted: false,
+        isPaused: false
+      }));
+    });
+  };
+
+  // Toggle Pause Game state (Host only)
+  const togglePause = () => {
+    if (!isHost) return;
+    setGameState((prev) => {
+      const nextPaused = !prev.isPaused;
+      const nextState = {
+        ...prev,
+        isPaused: nextPaused,
+        statusMessage: nextPaused
+          ? 'Game Paused by Host'
+          : `Game Resumed! It is ${prev.players[prev.activePlayerIndex]?.name}'s turn.`
+      };
+      peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
+      return nextState;
+    });
   };
 
   // Guest setup triggers
@@ -638,6 +788,7 @@ export const App: React.FC = () => {
 
   // Disconnect / Leave game
   const leaveGame = () => {
+    stopVoiceChat();
     if (joinIntervalRef.current) {
       clearInterval(joinIntervalRef.current);
       joinIntervalRef.current = null;
@@ -665,6 +816,7 @@ export const App: React.FC = () => {
 
   // Roll / Move wrapper mapping to network action if client
   const triggerRollIntent = () => {
+    if (gameState.isPaused) return;
     if (isHost) {
       rollDice();
     } else {
@@ -673,6 +825,7 @@ export const App: React.FC = () => {
   };
 
   const triggerMoveIntent = (tokenId: number) => {
+    if (gameState.isPaused) return;
     if (isHost) {
       moveToken(tokenId);
     } else {
@@ -682,7 +835,7 @@ export const App: React.FC = () => {
 
   // BOT AI turn automation
   useEffect(() => {
-    if (!isHost || !gameState.gameStarted || gameState.winnerColor) return;
+    if (!isHost || !gameState.gameStarted || gameState.winnerColor || gameState.isPaused) return;
 
     const activePlayer = getActivePlayer();
     if (!activePlayer || !activePlayer.isBot) return;
@@ -998,7 +1151,27 @@ export const App: React.FC = () => {
       <header className="header">
         <h1 className="logo">LUDO P2P</h1>
         <div className="header-controls">
-
+          {inGame && roomId !== 'OFFLINE' && (
+            <button
+              className={`icon-btn ${voiceActive ? 'voice-active-pill animate-pulse' : ''}`}
+              onClick={voiceActive ? stopVoiceChat : startVoiceChat}
+              title={voiceActive ? "Turn Off Voice Chat" : "Turn On Voice Chat"}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                background: voiceActive ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
+                borderColor: voiceActive ? 'var(--ludo-green)' : 'var(--border-light)',
+                borderRadius: '20px',
+                padding: '4px 10px',
+                fontSize: '0.8rem',
+                color: voiceActive ? '#4ade80' : 'inherit'
+              }}
+            >
+              {voiceActive ? <Mic size={18} /> : <MicOff size={18} />}
+              <span>{voiceActive ? "Voice On" : "Voice Off"}</span>
+            </button>
+          )}
           <button className="icon-btn" onClick={toggleSound} title="Toggle Sounds">
             {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
           </button>
@@ -1015,6 +1188,7 @@ export const App: React.FC = () => {
         <Lobby
           onHost={hostRoom}
           onJoin={joinRoom}
+          onOffline={playOffline}
           players={gameState.players}
           roomId={roomId}
           isHost={isHost}
@@ -1027,14 +1201,49 @@ export const App: React.FC = () => {
       ) : (
         <main className="main-game">
           {/* Centered Board & Controls */}
-          <div className="game-column">
-            <LudoBoard
-              tokens={gameState.tokens}
-              activeColor={activePlayer?.color || null}
-              diceValue={gameState.diceValue}
-              hasRolled={gameState.hasRolled}
-              onTokenClick={triggerMoveIntent}
-            />
+          <div className="game-column" style={{ position: 'relative' }}>
+            <div style={{ position: 'relative' }}>
+              <LudoBoard
+                tokens={gameState.tokens}
+                activeColor={activePlayer?.color || null}
+                diceValue={gameState.diceValue}
+                hasRolled={gameState.hasRolled}
+                onTokenClick={triggerMoveIntent}
+              />
+              {gameState.isPaused && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    background: 'rgba(6, 8, 14, 0.75)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 50,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 16,
+                    borderRadius: '12px'
+                  }}
+                >
+                  <div style={{ fontSize: '2rem', fontWeight: 900, color: 'white', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Pause size={28} className="text-red-500 animate-pulse" />
+                    <span>GAME PAUSED</span>
+                  </div>
+                  <p style={{ color: 'var(--neutral-400)', fontSize: '0.9rem', margin: 0 }}>
+                    The host has paused the game.
+                  </p>
+                  {isHost && (
+                    <button className="glass-button glow-green" style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={togglePause}>
+                      <Play size={14} /> Resume Game
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="game-controls-panel glass-panel">
               <div className="status-box">
@@ -1103,10 +1312,25 @@ export const App: React.FC = () => {
                 <div style={{ display: 'flex', gap: 12, width: '100%' }}>
                   <button
                     className="glass-button"
-                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.8rem' }}
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                    onClick={togglePause}
+                  >
+                    {gameState.isPaused ? (
+                      <>
+                        <Play size={14} /> Resume Game
+                      </>
+                    ) : (
+                      <>
+                        <Pause size={14} /> Pause Game
+                      </>
+                    )}
+                  </button>
+                  <button
+                    className="glass-button"
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
                     onClick={restartGame}
                   >
-                    <RotateCcw size={14} /> Reset Board
+                    <RotateCcw size={14} /> Restart Game
                   </button>
                 </div>
               )}
