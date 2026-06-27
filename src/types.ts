@@ -1,0 +1,45 @@
+export type PlayerColor = 'red' | 'green' | 'yellow' | 'blue';
+
+export interface Player {
+  id: string;
+  name: string;
+  color: PlayerColor;
+  isHost: boolean;
+  isConnected: boolean;
+  isBot: boolean;
+}
+
+export interface Token {
+  id: number; // 0, 1, 2, 3
+  color: PlayerColor;
+  position: number; // 0 = Yard, 1-51 = Common Track, 52-56 = Home Path, 57 = Home (Goal)
+}
+
+export interface ChatMsg {
+  id: string;
+  senderName: string;
+  senderColor?: PlayerColor | 'system';
+  text: string;
+  timestamp: number;
+  isSystem: boolean;
+}
+
+export interface GameState {
+  players: Player[];
+  tokens: Token[];
+  activePlayerIndex: number;
+  diceValue: number;
+  diceState: 'idle' | 'rolling' | 'rolled';
+  hasRolled: boolean;
+  winnerColor: PlayerColor | null;
+  logs: string[];
+  statusMessage: string;
+  chat: ChatMsg[];
+  gameStarted: boolean;
+  consecutiveSixes: number;
+}
+
+export interface NetworkMessage {
+  type: 'SYNC_STATE' | 'CHAT' | 'ROLL_DICE' | 'MOVE_TOKEN' | 'RESTART_GAME' | 'JOIN_ROOM' | 'LEAVE_ROOM' | 'BOT_CONFIG';
+  payload: any;
+}
