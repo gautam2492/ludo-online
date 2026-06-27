@@ -63,6 +63,7 @@ export const App: React.FC = () => {
   // Reference to game state for event handlers / callbacks
   const stateRef = useRef(gameState);
   stateRef.current = gameState;
+  const isWalkingRef = useRef(false);
 
   // Track the interval for safety client join retries
   const joinIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -363,7 +364,7 @@ export const App: React.FC = () => {
   // Handle Roll Dice action (Authoritative Host only)
   const rollDice = () => {
     const state = stateRef.current;
-    if (state.hasRolled || state.diceState === 'rolling' || state.winnerColor) return;
+    if (state.hasRolled || state.diceState === 'rolling' || state.winnerColor || isWalkingRef.current) return;
 
     const activePlayer = getActivePlayer(state);
     if (!activePlayer) return;
@@ -418,28 +419,20 @@ export const App: React.FC = () => {
         // If no moves are possible, check if we rolled a 6
         const movesPossible = hasValidMoves(prev.tokens, finalVal, activePl.color);
         if (!movesPossible) {
-          if (isSix) {
-            // Keep turn (rolled 6 bonus roll even if no moves possible)
-            nextState.statusMessage = `${activePl.name} rolled a 6 but has no valid moves. Roll again!`;
-            nextState.hasRolled = false;
-            nextState.diceState = 'idle' as const;
-            nextState.turnTimer = activePl.isBot ? null : 30;
-          } else {
-            nextState.statusMessage = `${activePl.name} has no valid moves with ${finalVal}!`;
-            setTimeout(() => {
-              setGameState((currentState) => {
-                // Safety check: ensure turn wasn't advanced/changed in the meantime
-                if (currentState.activePlayerIndex !== prev.activePlayerIndex || !currentState.hasRolled) {
-                  return currentState;
-                }
-                const advancedState = advanceTurn(currentState, false, false, false);
-                if (isHost) {
-                  peerService.broadcast({ type: 'SYNC_STATE', payload: advancedState });
-                }
-                return advancedState;
-              });
-            }, 1500);
-          }
+          nextState.statusMessage = `${activePl.name} rolled a ${finalVal} but has no valid moves!`;
+          setTimeout(() => {
+            setGameState((currentState) => {
+              // Safety check: ensure turn wasn't advanced/changed in the meantime
+              if (currentState.activePlayerIndex !== prev.activePlayerIndex || !currentState.hasRolled) {
+                return currentState;
+              }
+              const advancedState = advanceTurn(currentState, false, false, false);
+              if (isHost) {
+                peerService.broadcast({ type: 'SYNC_STATE', payload: advancedState });
+              }
+              return advancedState;
+            });
+          }, 1500);
         } else {
           nextState.statusMessage = `${activePl.name} rolled a ${finalVal}. Select a token to move.`;
         }
@@ -455,7 +448,7 @@ export const App: React.FC = () => {
   // Handle Token Move action (Authoritative Host only)
   const moveToken = (tokenId: number) => {
     const state = stateRef.current;
-    if (!state.hasRolled || state.diceState !== 'rolled' || state.winnerColor) return;
+    if (!state.hasRolled || state.diceState !== 'rolled' || state.winnerColor || isWalkingRef.current) return;
 
     const activePlayer = getActivePlayer(state);
     if (!activePlayer) return;
@@ -469,61 +462,100 @@ export const App: React.FC = () => {
 
     if (!isValidMove(token, state.diceValue, activePlayer.color)) return;
 
-    audio.playMove();
+    // Build the step-by-step positions
+    const steps: number[] = [];
+    if (token.position === 0) {
+      steps.push(1);
+    } else {
+      for (let i = 1; i <= state.diceValue; i++) {
+        steps.push(token.position + i);
+      }
+    }
 
-    setGameState((prev) => {
-      const currentToken = prev.tokens[tokenIndex];
-      const nextPos = getNextPosition(currentToken, prev.diceValue);
+    isWalkingRef.current = true;
 
-      // Check captures
-      const captures = getCapturedTokens(currentToken, nextPos, prev.tokens);
-      let capturedFlag = false;
+    const executeWalk = (stepIdx: number) => {
+      if (stepIdx >= steps.length) {
+        // Walk finished! Perform capture check, victory check and advance turn!
+        isWalkingRef.current = false;
 
-      // Update tokens array
-      const newTokens = prev.tokens.map((t, idx) => {
-        if (idx === tokenIndex) {
-          return { ...t, position: nextPos };
+        setGameState((prev) => {
+          const finalPos = steps[steps.length - 1];
+          const captures = getCapturedTokens(token, finalPos, prev.tokens);
+          let capturedFlag = false;
+
+          const finalTokens = prev.tokens.map((t, idx) => {
+            if (idx === tokenIndex) {
+              return { ...t, position: finalPos };
+            }
+            const isCaptured = captures.some((c) => c.color === t.color && c.id === t.id);
+            if (isCaptured) {
+              capturedFlag = true;
+              return { ...t, position: 0 };
+            }
+            return t;
+          });
+
+          const reachedGoal = finalPos === 57;
+          let logMsg = `${activePlayer.name} moved token ${tokenId + 1} to space ${finalPos}`;
+          if (reachedGoal) {
+            logMsg = `🎉 ${activePlayer.name}'s token ${tokenId + 1} got home!`;
+            audio.playHome();
+          } else if (capturedFlag) {
+            captures.forEach((opp) => {
+              logMsg = `💥 ${activePlayer.name} captured Opponent's token (${opp.color.toUpperCase()})!`;
+            });
+            audio.playCapture();
+          }
+
+          let nextState = {
+            ...prev,
+            tokens: finalTokens,
+            logs: [...prev.logs, logMsg]
+          };
+
+          const rolledSix = prev.diceValue === 6;
+          nextState = advanceTurn(nextState, rolledSix, capturedFlag, reachedGoal);
+
+          if (isHost) {
+            peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
+          }
+          return nextState;
+        });
+        return;
+      }
+
+      // Perform intermediate step
+      const stepPos = steps[stepIdx];
+      audio.playMove(); // play step sound
+
+      setGameState((prev) => {
+        const nextTokens = prev.tokens.map((t, idx) => {
+          if (idx === tokenIndex) {
+            return { ...t, position: stepPos };
+          }
+          return t;
+        });
+
+        const nextState = {
+          ...prev,
+          tokens: nextTokens
+        };
+
+        if (isHost) {
+          peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
         }
-        // If captured, return to yard (position 0)
-        const isCaptured = captures.some((c) => c.color === t.color && c.id === t.id);
-        if (isCaptured) {
-          capturedFlag = true;
-          return { ...t, position: 0 };
-        }
-        return t;
+        return nextState;
       });
 
-      const reachedGoal = nextPos === 57;
+      // Schedule next step
+      setTimeout(() => {
+        executeWalk(stepIdx + 1);
+      }, 200); // 200ms per step matching transition speed exactly!
+    };
 
-      // System message feedback
-      let logMsg = `${activePlayer.name} moved token ${tokenId + 1} to space ${nextPos}`;
-      if (reachedGoal) {
-        logMsg = `🎉 ${activePlayer.name}'s token ${tokenId + 1} got home!`;
-        audio.playHome();
-      } else if (capturedFlag) {
-        captures.forEach((opp) => {
-          logMsg = `💥 ${activePlayer.name} captured Opponent's token (${opp.color.toUpperCase()})!`;
-        });
-        audio.playCapture();
-      }
-
-      // Compile state update
-      let nextState = {
-        ...prev,
-        tokens: newTokens,
-        logs: [...prev.logs, logMsg]
-      };
-
-      // Check if this move triggers bonus turn or advances
-      const rolledSix = prev.diceValue === 6;
-      nextState = advanceTurn(nextState, rolledSix, capturedFlag, reachedGoal);
-
-      if (isHost) {
-        peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
-      }
-
-      return nextState;
-    });
+    // Start walking animation!
+    executeWalk(0);
   };
 
   // Host Action: Restart Match
@@ -1246,6 +1278,14 @@ export const App: React.FC = () => {
 
         .emoji-selector-btn:active {
           transform: scale(0.9);
+        }
+
+        /* Smooth transitions for pawn movements */
+        .token-element circle {
+          transition: cx 0.2s cubic-bezier(0.25, 1, 0.5, 1), cy 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .token-element text {
+          transition: x 0.2s cubic-bezier(0.25, 1, 0.5, 1), y 0.2s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
         @keyframes floatUpFade {
