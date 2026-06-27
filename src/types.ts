@@ -37,6 +37,7 @@ export interface GameState {
   chat: ChatMsg[];
   gameStarted: boolean;
   consecutiveSixes: number;
+  turnTimer: number | null;
 }
 
 export interface NetworkMessage {

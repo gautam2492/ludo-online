@@ -49,7 +49,8 @@ export const App: React.FC = () => {
     chat: [],
     gameStarted: false,
     statusMessage: 'Welcome to Ludo! Host a room or join one to start.',
-    consecutiveSixes: 0
+    consecutiveSixes: 0,
+    turnTimer: null
   });
 
   // Reference to game state for event handlers / callbacks
@@ -73,6 +74,40 @@ export const App: React.FC = () => {
       peerService.registerCallbacks(handleNetworkMessage);
     }
   });
+
+  // Turn Timer countdown (Host only)
+  useEffect(() => {
+    if (!isHost || !gameState.gameStarted || gameState.winnerColor) return;
+    if (gameState.turnTimer === null) return;
+
+    const timer = setInterval(() => {
+      setGameState((prev) => {
+        if (prev.turnTimer === null || prev.turnTimer <= 0) {
+          clearInterval(timer);
+          return prev;
+        }
+
+        const nextVal = prev.turnTimer - 1;
+        let nextState: GameState = {
+          ...prev,
+          turnTimer: nextVal
+        };
+
+        if (nextVal === 0) {
+          // Timer expired! Skip turn.
+          const activePl = prev.players[prev.activePlayerIndex];
+          nextState.logs = [...nextState.logs, `⏳ Time out! ${activePl.name}'s turn skipped.`];
+          nextState = advanceTurn(nextState, false, false, false);
+          audio.playCapture(); // Beep-like sound for skip
+        }
+
+        peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
+        return nextState;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isHost, gameState.gameStarted, gameState.winnerColor, gameState.activePlayerIndex, gameState.turnTimer === null]);
 
   // Sound toggle helper
   const toggleSound = () => {
@@ -127,6 +162,7 @@ export const App: React.FC = () => {
         ...state,
         hasRolled: false,
         diceState: 'idle' as const,
+        turnTimer: activePlayer.isBot ? null : 30,
         statusMessage: `${activePlayer.name}'s bonus turn (earned by ${bonusType})!`
       };
     }
@@ -152,6 +188,7 @@ export const App: React.FC = () => {
       hasRolled: false,
       diceState: 'idle' as const,
       consecutiveSixes: 0,
+      turnTimer: nextPlayer.isBot ? null : 30,
       statusMessage: `It is now ${nextPlayer.name}'s turn (${nextPlayer.color.toUpperCase()})`
     };
   };
@@ -167,11 +204,12 @@ export const App: React.FC = () => {
     // Trigger rolling state
     setGameState((prev) => ({
       ...prev,
-      diceState: 'rolling'
+      diceState: 'rolling',
+      turnTimer: null
     }));
 
     if (isHost) {
-      peerService.broadcast({ type: 'SYNC_STATE', payload: { ...state, diceState: 'rolling' } });
+      peerService.broadcast({ type: 'SYNC_STATE', payload: { ...state, diceState: 'rolling', turnTimer: null } });
     }
 
     // Dice roll finishes after 800ms animation
@@ -218,6 +256,7 @@ export const App: React.FC = () => {
             nextState.statusMessage = `${activePl.name} rolled a 6 but has no valid moves. Roll again!`;
             nextState.hasRolled = false;
             nextState.diceState = 'idle' as const;
+            nextState.turnTimer = activePl.isBot ? null : 30;
           } else {
             nextState.statusMessage = `${activePl.name} has no valid moves with ${finalVal}!`;
             setTimeout(() => {
@@ -334,6 +373,7 @@ export const App: React.FC = () => {
         hasRolled: false,
         winnerColor: null,
         consecutiveSixes: 0,
+        turnTimer: prev.players[0].isBot ? null : 30,
         logs: [...prev.logs, 'Host restarted the match!']
       };
       peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
@@ -594,10 +634,12 @@ export const App: React.FC = () => {
   const startGame = () => {
     if (!isHost) return;
     setGameState((prev) => {
+      const firstPlayer = prev.players[0];
       const nextState = {
         ...prev,
         gameStarted: true,
-        statusMessage: `Match started! ${prev.players[0].name}'s turn.`
+        turnTimer: firstPlayer.isBot ? null : 30,
+        statusMessage: `Match started! ${firstPlayer.name}'s turn.`
       };
       peerService.broadcast({ type: 'SYNC_STATE', payload: nextState });
       return nextState;
@@ -655,7 +697,8 @@ export const App: React.FC = () => {
       chat: [],
       gameStarted: false,
       statusMessage: '',
-      consecutiveSixes: 0
+      consecutiveSixes: 0,
+      turnTimer: null
     });
   };
 
@@ -976,8 +1019,29 @@ export const App: React.FC = () => {
                 />
                 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--neutral-500)', textTransform: 'uppercase' }}>
-                    Active Turn
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--neutral-500)', textTransform: 'uppercase' }}>
+                      Active Turn
+                    </span>
+                    {gameState.turnTimer !== null && (
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 800,
+                          color: gameState.turnTimer <= 5 ? '#f87171' : '#eab308',
+                          padding: '1px 6px',
+                          background: 'rgba(255,255,255,0.05)',
+                          borderRadius: '8px',
+                          border: `1px solid ${gameState.turnTimer <= 5 ? '#ef4444' : 'rgba(255,255,255,0.1)'}`,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 2
+                        }}
+                        className={gameState.turnTimer <= 5 ? 'animate-pulse' : ''}
+                      >
+                        ⏱️ {gameState.turnTimer}s
+                      </span>
+                    )}
                   </div>
                   <div
                     style={{
