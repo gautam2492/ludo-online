@@ -13,7 +13,7 @@ import {
   hasValidMoves,
   hasPlayerWon
 } from './utils/ludoLogic';
-import { Volume2, VolumeX, LogOut, Info, RotateCcw } from 'lucide-react';
+import { Volume2, VolumeX, LogOut, Info, RotateCcw, MessageSquare } from 'lucide-react';
 
 
 const INITIAL_TOKENS = (): Token[] => {
@@ -35,6 +35,7 @@ export const App: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(audio.isEnabled());
+  const [showChatMobile, setShowChatMobile] = useState(false);
 
   // Game state
   const [gameState, setGameState] = useState<GameState>({
@@ -853,8 +854,8 @@ export const App: React.FC = () => {
           flex: 1;
           display: grid;
           grid-template-columns: 1fr;
-          gap: 24px;
-          padding: 24px;
+          gap: 16px;
+          padding: 12px;
           max-width: 1500px;
           width: 100%;
           margin: 0 auto;
@@ -863,6 +864,8 @@ export const App: React.FC = () => {
         @media (min-width: 768px) {
           .main-game {
             grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            padding: 24px;
             align-items: start;
           }
         }
@@ -935,6 +938,57 @@ export const App: React.FC = () => {
           letter-spacing: 0.1em;
           text-align: center;
         }
+
+        .chat-column-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .drawer-backdrop {
+          position: fixed;
+          top: 72px;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(2px);
+          z-index: 99;
+          transition: opacity 0.3s ease;
+        }
+
+        @media (max-width: 1023px) {
+          .chat-column-wrapper {
+            position: fixed;
+            top: 72px;
+            right: 0;
+            bottom: 0;
+            width: 340px;
+            max-width: 85vw;
+            background: #0d1220;
+            border-left: 1px solid var(--border-light);
+            z-index: 100;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 16px;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            overflow-y: auto;
+          }
+
+          .chat-column-wrapper.open {
+            transform: translateX(0);
+          }
+
+          .how-to-play-card {
+            display: none;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .drawer-backdrop {
+            display: none;
+          }
+        }
       `}</style>
 
       {/* Winner Screen Overlay */}
@@ -974,6 +1028,30 @@ export const App: React.FC = () => {
       <header className="header">
         <h1 className="logo">LUDO P2P</h1>
         <div className="header-controls">
+          {inGame && gameState.gameStarted && (
+            <button
+              className={`icon-btn ${showChatMobile ? 'text-blue-400 border-blue-400' : ''}`}
+              onClick={() => setShowChatMobile(!showChatMobile)}
+              title="Toggle Chat"
+              style={{ position: 'relative' }}
+            >
+              <MessageSquare size={20} />
+              {/* Simple unread notification dot badge */}
+              {gameState.chat.length > 0 && !showChatMobile && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 2,
+                    right: 2,
+                    width: 8,
+                    height: 8,
+                    background: '#3b82f6',
+                    borderRadius: '50%'
+                  }}
+                />
+              )}
+            </button>
+          )}
           <button className="icon-btn" onClick={toggleSound} title="Toggle Sounds">
             {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
           </button>
@@ -1001,6 +1079,11 @@ export const App: React.FC = () => {
         />
       ) : (
         <main className="main-game">
+          {/* Mobile Chat Drawer Backdrop */}
+          {showChatMobile && (
+            <div className="drawer-backdrop" onClick={() => setShowChatMobile(false)} />
+          )}
+
           {/* Column 1: Board & Dice */}
           <div className="game-column">
             <LudoBoard
@@ -1089,7 +1172,7 @@ export const App: React.FC = () => {
           </div>
 
           {/* Column 2: Chat & Game Logs */}
-          <div className="game-column">
+          <div className={`game-column chat-column-wrapper ${showChatMobile ? 'open' : ''}`}>
             <ChatPanel
               chat={gameState.chat}
               players={gameState.players}
@@ -1097,7 +1180,7 @@ export const App: React.FC = () => {
               myPlayerId={myPlayerId}
             />
             
-            <div className="glass-panel" style={{ padding: '16px', fontSize: '0.8rem', color: 'var(--neutral-500)' }}>
+            <div className="glass-panel how-to-play-card" style={{ padding: '16px', fontSize: '0.8rem', color: 'var(--neutral-500)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, fontWeight: 700, color: 'var(--neutral-300)' }}>
                 <Info size={14} />
                 <span>HOW TO PLAY ONLINE</span>

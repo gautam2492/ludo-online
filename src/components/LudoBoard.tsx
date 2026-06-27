@@ -183,6 +183,12 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
           position: relative;
         }
 
+        @media (min-width: 1024px) {
+          .board-container {
+            max-width: 800px;
+          }
+        }
+
         .ludo-board-svg {
           width: 100%;
           height: 100%;
@@ -338,6 +344,16 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
               onMouseLeave={() => setHoveredTokenId(null)}
               style={{ color: colorMap[color] }}
             >
+              {/* Invisible large touch target overlay for mobile ease of use */}
+              {canMove && (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={0.65}
+                  fill="transparent"
+                  style={{ cursor: 'pointer' }}
+                />
+              )}
               {/* Token Shadow and Base */}
               <circle
                 cx={cx}
