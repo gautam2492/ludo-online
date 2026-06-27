@@ -327,7 +327,7 @@ export const App: React.FC = () => {
         return t;
       });
 
-      const reachedGoal = nextPos === 56;
+      const reachedGoal = nextPos === 57;
 
       // System message feedback
       let logMsg = `${activePlayer.name} moved token ${tokenId + 1} to space ${nextPos}`;
@@ -725,12 +725,12 @@ export const App: React.FC = () => {
           }
 
           // 3. Reaching goal
-          if (nextPos === 56) {
+          if (nextPos === 57) {
             score += 400;
           }
 
           // 4. Moving closer to goal path
-          if (token.position > 40 && nextPos >= 51) {
+          if (token.position < 52 && nextPos >= 52) {
             score += 200;
           }
 

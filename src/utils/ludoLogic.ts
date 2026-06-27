@@ -73,15 +73,15 @@ export function getTokenCoordinates(token: Token): { x: number; y: number } {
     return { x: coord[0], y: coord[1] };
   }
 
-  if (position === 56) {
+  if (position === 57) {
     // In Goal (Home)
     const coord = GOAL_COORDS[color][id];
     return { x: coord[0], y: coord[1] };
   }
 
-  if (position >= 51 && position <= 55) {
+  if (position >= 52 && position <= 56) {
     // Home Path
-    const coord = HOME_PATH_COORDS[color][position - 51];
+    const coord = HOME_PATH_COORDS[color][position - 52];
     return { x: coord[0], y: coord[1] };
   }
 
@@ -105,7 +105,7 @@ export function isValidMove(token: Token, diceValue: number, activePlayerColor: 
   }
 
   // Token is on track or home path
-  return token.position + diceValue <= 56;
+  return token.position + diceValue <= 57;
 }
 
 /**
@@ -127,8 +127,8 @@ export function getCapturedTokens(
   nextPosition: number,
   allTokens: Token[]
 ): Token[] {
-  // Can only capture on the common track (positions 1 to 50)
-  if (nextPosition < 1 || nextPosition > 50) return [];
+  // Can only capture on the common track (positions 1 to 51)
+  if (nextPosition < 1 || nextPosition > 51) return [];
 
   // Calculate global track index of destination
   const startIdx = START_INDEX[movingToken.color];
@@ -139,7 +139,7 @@ export function getCapturedTokens(
 
   // Find opponent tokens on the same track cell
   return allTokens.filter(t => {
-    if (t.color === movingToken.color || t.position === 0 || t.position >= 51) return false;
+    if (t.color === movingToken.color || t.position === 0 || t.position >= 52) return false;
     const oppStartIdx = START_INDEX[t.color];
     const oppTrackIdx = (oppStartIdx + t.position - 1) % 52;
     return oppTrackIdx === destTrackIdx;
@@ -158,5 +158,5 @@ export function hasValidMoves(tokens: Token[], diceValue: number, color: PlayerC
  */
 export function hasPlayerWon(tokens: Token[], color: PlayerColor): boolean {
   const playerTokens = tokens.filter(t => t.color === color);
-  return playerTokens.length === 4 && playerTokens.every(t => t.position === 56);
+  return playerTokens.length === 4 && playerTokens.every(t => t.position === 57);
 }

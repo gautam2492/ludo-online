@@ -300,7 +300,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
             const nextPos = getNextPosition(hoveredToken, diceValue);
             const dummyToken: Token = { ...hoveredToken, position: nextPos };
             const coord = getTokenCoordinates(dummyToken);
-            const isGridPosition = nextPos !== 0 && nextPos !== 56;
+            const isGridPosition = nextPos !== 0 && nextPos !== 57;
             const cx = coord.x + (isGridPosition ? 0.5 : 0);
             const cy = coord.y + (isGridPosition ? 0.5 : 0);
             return (
@@ -331,7 +331,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
           const { color, id, position } = token;
           const coord = getTokenCoordinates(token);
           const offset = offsets.get(`${color}_${id}`) || { dx: 0, dy: 0 };
-          const isGridPosition = position !== 0 && position !== 56;
+          const isGridPosition = position !== 0 && position !== 57;
           const cx = coord.x + (isGridPosition ? 0.5 : 0) + offset.dx;
           const cy = coord.y + (isGridPosition ? 0.5 : 0) + offset.dy;
 
