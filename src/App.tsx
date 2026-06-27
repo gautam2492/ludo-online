@@ -56,6 +56,17 @@ export const App: React.FC = () => {
   const stateRef = useRef(gameState);
   stateRef.current = gameState;
 
+  // Track the interval for safety client join retries
+  const joinIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (joinIntervalRef.current) {
+        clearInterval(joinIntervalRef.current);
+      }
+    };
+  }, []);
+
   // Sound toggle helper
   const toggleSound = () => {
     const newVal = !soundEnabled;
@@ -347,6 +358,16 @@ export const App: React.FC = () => {
         if (isHost) {
           const { id, name } = msg.payload;
           setGameState((prev) => {
+            // Check if player already exists
+            const existingPlayer = prev.players.find((p) => p.id === id);
+            if (existingPlayer) {
+              // Resend state to ensure they sync up
+              setTimeout(() => {
+                peerService.broadcast({ type: 'SYNC_STATE', payload: prev });
+              }, 100);
+              return prev;
+            }
+
             // Find first available color
             const assignedColors = prev.players.map((p) => p.color);
             const colorsList: PlayerColor[] = ['red', 'green', 'yellow', 'blue'];
@@ -482,6 +503,33 @@ export const App: React.FC = () => {
         setInGame(true);
 
         peerService.registerCallbacks(handleNetworkMessage);
+
+        if (joinIntervalRef.current) {
+          clearInterval(joinIntervalRef.current);
+        }
+
+        const myId = peerService.getPlayerId();
+        joinIntervalRef.current = setInterval(() => {
+          setGameState((currentState) => {
+            const isSelfPresent = currentState.players.some(p => p.id === myId);
+            if (isSelfPresent) {
+              if (joinIntervalRef.current) {
+                clearInterval(joinIntervalRef.current);
+                joinIntervalRef.current = null;
+              }
+              return currentState;
+            }
+            // Send JOIN_ROOM intent again until the host accepts it and registers us
+            peerService.sendToHost({
+              type: 'JOIN_ROOM',
+              payload: {
+                id: myId,
+                name: guestName
+              }
+            });
+            return currentState;
+          });
+        }, 1500);
       },
       (_err) => {
         setErrorMsg('Failed to join room. Verify the Room ID and try again.');
@@ -580,6 +628,10 @@ export const App: React.FC = () => {
 
   // Disconnect / Leave game
   const leaveGame = () => {
+    if (joinIntervalRef.current) {
+      clearInterval(joinIntervalRef.current);
+      joinIntervalRef.current = null;
+    }
     peerService.cleanup();
     setInGame(false);
     setRoomId('');

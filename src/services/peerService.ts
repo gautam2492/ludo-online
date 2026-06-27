@@ -64,7 +64,7 @@ class PeerService {
       const conn = this.peer!.connect(this.roomId);
       this.hostConnection = conn;
       
-      conn.on('open', () => {
+      const handleGuestOpen = () => {
         onConnected();
         // Send initial join message
         this.sendToHost({
@@ -74,7 +74,13 @@ class PeerService {
             name: this.myName
           }
         });
-      });
+      };
+
+      if (conn.open) {
+        handleGuestOpen();
+      } else {
+        conn.on('open', handleGuestOpen);
+      }
 
       conn.on('data', (data: any) => {
         if (this.onMessageCallback) {
@@ -100,12 +106,23 @@ class PeerService {
   }
 
   private setupHostConnectionHandlers(conn: DataConnection) {
-    conn.on('open', () => {
+    const handleHostOpen = () => {
       console.log('Client connected:', conn.peer);
       this.connections.set(conn.peer, conn);
-    });
+    };
+
+    if (conn.open) {
+      handleHostOpen();
+    } else {
+      conn.on('open', handleHostOpen);
+    }
 
     conn.on('data', (data: any) => {
+      // Safety Sync Check: if data is received, connection is active. Ensure mapping exists.
+      if (!this.connections.has(conn.peer)) {
+        this.connections.set(conn.peer, conn);
+      }
+
       const msg = data as NetworkMessage;
       if (msg.type === 'JOIN_ROOM') {
         // Associate connection metadata
