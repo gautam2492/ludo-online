@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Player, PlayerColor } from '../types';
-import { Play, Copy, Check, User, Hash, Cpu, RefreshCw } from 'lucide-react';
+import { Play, Copy, Check, User, Hash, Cpu, RefreshCw, Info } from 'lucide-react';
 
 import { audio } from '../utils/audio';
 
@@ -437,6 +437,19 @@ export const Lobby: React.FC<LobbyProps> = ({
                   Waiting for host to start the match...
                 </div>
               )}
+            </div>
+            
+            <div className="glass-panel" style={{ padding: '16px', fontSize: '0.8rem', color: 'var(--neutral-500)', marginTop: '20px', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.06)', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, fontWeight: 700, color: 'var(--neutral-300)' }}>
+                <Info size={14} className="text-blue-400" />
+                <span>HOW TO PLAY ONLINE</span>
+              </div>
+              <ul style={{ paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: 4, textAlign: 'left', margin: 0 }}>
+                <li>Host a game and share the Room ID with friends to join.</li>
+                <li>Roll a 6 to release a token from your yard onto the starting cell.</li>
+                <li>Earn a bonus turn if you roll a 6, capture an opponent's token, or get a token home.</li>
+                <li>If a player leaves, a Bot will instantly take over their turn so you can finish!</li>
+              </ul>
             </div>
           </>
         )}

@@ -3,7 +3,6 @@ import type { GameState, Player, Token, ChatMsg, PlayerColor, NetworkMessage } f
 import Lobby from './components/Lobby';
 import LudoBoard from './components/LudoBoard';
 import Dice from './components/Dice';
-import ChatPanel from './components/ChatPanel';
 import peerService from './services/peerService';
 import { audio } from './utils/audio';
 import {
@@ -13,7 +12,7 @@ import {
   hasValidMoves,
   hasPlayerWon
 } from './utils/ludoLogic';
-import { Volume2, VolumeX, LogOut, Info, RotateCcw, ScrollText } from 'lucide-react';
+import { Volume2, VolumeX, LogOut, RotateCcw } from 'lucide-react';
 
 
 const INITIAL_TOKENS = (): Token[] => {
@@ -35,7 +34,6 @@ export const App: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(audio.isEnabled());
-  const [showChatMobile, setShowChatMobile] = useState(false);
 
   // Game state
   const [gameState, setGameState] = useState<GameState>({
@@ -815,12 +813,28 @@ export const App: React.FC = () => {
           border-color: var(--border-focus);
         }
 
+        * {
+          -webkit-tap-highlight-color: transparent;
+          user-select: none;
+          touch-action: manipulation;
+        }
+
+        .token-active, .dice-outer {
+          touch-action: none;
+        }
+
         .main-game {
           flex: 1;
-          display: grid;
-          grid-template-columns: 1fr;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
           gap: 16px;
           padding: 12px;
+          padding-top: max(12px, env(safe-area-inset-top));
+          padding-bottom: max(12px, env(safe-area-inset-bottom));
+          padding-left: max(12px, env(safe-area-inset-left));
+          padding-right: max(12px, env(safe-area-inset-right));
           max-width: 1500px;
           width: 100%;
           margin: 0 auto;
@@ -832,17 +846,7 @@ export const App: React.FC = () => {
 
         @media (min-width: 768px) {
           .main-game {
-            grid-template-columns: 2fr 1fr;
-            gap: 24px;
             padding: 24px;
-            align-items: center;
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .main-game {
-            grid-template-columns: 4fr 1fr;
-            align-items: center;
           }
         }
 
@@ -855,6 +859,39 @@ export const App: React.FC = () => {
           max-height: 100%;
           overflow: hidden;
           width: 100%;
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+          .main-game {
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 8px;
+            height: calc(100vh - 56px);
+            height: calc(100dvh - 56px);
+          }
+
+          .game-column {
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            height: 100%;
+            width: auto;
+          }
+
+          .game-controls-panel {
+            max-width: 280px;
+            padding: 8px;
+            gap: 8px;
+          }
+
+          .dice-outer {
+            flex-direction: column;
+            gap: 8px;
+            padding: 4px;
+          }
         }
 
         .game-controls-panel {
@@ -922,62 +959,6 @@ export const App: React.FC = () => {
           text-align: center;
         }
 
-        .chat-column-wrapper {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          height: 100%;
-          max-height: 100%;
-          overflow: hidden;
-          box-sizing: border-box;
-        }
-
-        .drawer-backdrop {
-          position: fixed;
-          top: 64px;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(2px);
-          z-index: 99;
-          transition: opacity 0.3s ease;
-        }
-
-        @media (max-width: 1023px) {
-          .chat-column-wrapper {
-            position: fixed;
-            top: 64px;
-            right: 0;
-            bottom: 0;
-            width: 340px;
-            max-width: 85vw;
-            background: #0d1220;
-            border-left: 1px solid var(--border-light);
-            z-index: 100;
-            transform: translateX(100%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 16px;
-            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-            overflow-y: auto;
-            height: calc(100vh - 64px);
-            height: calc(100dvh - 64px);
-          }
-
-          .chat-column-wrapper.open {
-            transform: translateX(0);
-          }
-
-          .how-to-play-card {
-            display: none;
-          }
-        }
-
-        @media (min-width: 1024px) {
-          .drawer-backdrop {
-            display: none;
-          }
-        }
       `}</style>
 
       {/* Winner Screen Overlay */}
@@ -1017,30 +998,7 @@ export const App: React.FC = () => {
       <header className="header">
         <h1 className="logo">LUDO P2P</h1>
         <div className="header-controls">
-          {inGame && gameState.gameStarted && (
-            <button
-              className={`icon-btn ${showChatMobile ? 'text-blue-400 border-blue-400' : ''}`}
-              onClick={() => setShowChatMobile(!showChatMobile)}
-              title="Toggle Logs"
-              style={{ position: 'relative' }}
-            >
-              <ScrollText size={20} />
-              {/* Simple unread notification dot badge */}
-              {gameState.chat.length > 0 && !showChatMobile && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: 2,
-                    right: 2,
-                    width: 8,
-                    height: 8,
-                    background: '#3b82f6',
-                    borderRadius: '50%'
-                  }}
-                />
-              )}
-            </button>
-          )}
+
           <button className="icon-btn" onClick={toggleSound} title="Toggle Sounds">
             {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
           </button>
@@ -1068,12 +1026,7 @@ export const App: React.FC = () => {
         />
       ) : (
         <main className="main-game">
-          {/* Mobile Chat Drawer Backdrop */}
-          {showChatMobile && (
-            <div className="drawer-backdrop" onClick={() => setShowChatMobile(false)} />
-          )}
-
-          {/* Column 1: Board & Dice */}
+          {/* Centered Board & Controls */}
           <div className="game-column">
             <LudoBoard
               tokens={gameState.tokens}
@@ -1157,27 +1110,6 @@ export const App: React.FC = () => {
                   </button>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Column 2: Chat & Game Logs */}
-          <div className={`game-column chat-column-wrapper ${showChatMobile ? 'open' : ''}`}>
-            <ChatPanel
-              chat={gameState.chat}
-              players={gameState.players}
-            />
-            
-            <div className="glass-panel how-to-play-card" style={{ padding: '16px', fontSize: '0.8rem', color: 'var(--neutral-500)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, fontWeight: 700, color: 'var(--neutral-300)' }}>
-                <Info size={14} />
-                <span>HOW TO PLAY ONLINE</span>
-              </div>
-              <ul style={{ paddingLeft: '16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <li>Host a game and share the Room ID with friends to join.</li>
-                <li>Roll a 6 to release a token from your yard onto the starting cell.</li>
-                <li>Earn a bonus turn if you roll a 6, capture an opponent's token, or get a token home.</li>
-                <li>If a player leaves, a Bot will instantly take over their turn so you can finish!</li>
-              </ul>
             </div>
           </div>
         </main>
