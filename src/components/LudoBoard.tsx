@@ -50,12 +50,12 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
     const cy = 15;
 
     if (position === 0) {
-      let rx = 11;
-      let ry = 4;
-      if (id === 0) { rx = 10.2; ry = 4.2; }
-      else if (id === 1) { rx = 11.8; ry = 4.2; }
-      else if (id === 2) { rx = 10.2; ry = 5.8; }
-      else { rx = 11.8; ry = 5.8; }
+      let rx = 19.75;
+      let ry = 9.5;
+      if (id === 0) { rx = 19.1; ry = 8.8; }
+      else if (id === 1) { rx = 20.4; ry = 8.8; }
+      else if (id === 2) { rx = 19.1; ry = 10.2; }
+      else { rx = 20.4; ry = 10.2; }
       return rotatePoint(rx, ry, cx, cy, angle);
     }
 
@@ -303,7 +303,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
         }
       `}</style>
 
-      <svg viewBox={isSixPlayer ? "2.2 2.2 25.6 25.6" : "0 0 15 15"} className="ludo-board-svg">
+      <svg viewBox={isSixPlayer ? "4.3 4.3 21.4 21.4" : "0 0 15 15"} className="ludo-board-svg">
         {isSixPlayer ? (
           <>
             {/* Draw 6 arms recursively using transform rotation */}
@@ -371,10 +371,10 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
                   })}
                   {/* Yard Box */}
                   <rect
-                    x={9.5}
-                    y={3.5}
-                    width={3}
-                    height={3}
+                    x={17.5}
+                    y={7.2}
+                    width={4.5}
+                    height={4.5}
                     rx={0.5}
                     fill={`var(--ludo-${color}-dark)`}
                     stroke={`var(--ludo-${color})`}
@@ -382,20 +382,20 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
                     opacity={0.35}
                   />
                   <rect
-                    x={10.0}
-                    y={4.0}
-                    width={2}
-                    height={2}
+                    x={18.25}
+                    y={8.0}
+                    width={3.0}
+                    height={3.0}
                     fill="var(--bg-main)"
                     opacity={0.8}
                     rx={0.2}
                   />
                   {/* 4 Yard Token slots */}
-                  <circle cx={10.5} cy={4.5} r={0.32} fill={`var(--ludo-${color}-dark)`} opacity={0.4} stroke={`var(--ludo-${color})`} strokeWidth={0.02} />
-                  <circle cx={11.5} cy={4.5} r={0.32} fill={`var(--ludo-${color}-dark)`} opacity={0.4} stroke={`var(--ludo-${color})`} strokeWidth={0.02} />
-                  <circle cx={10.5} cy={5.5} r={0.32} fill={`var(--ludo-${color}-dark)`} opacity={0.4} stroke={`var(--ludo-${color})`} strokeWidth={0.02} />
-                  <circle cx={11.5} cy={5.5} r={0.32} fill={`var(--ludo-${color}-dark)`} opacity={0.4} stroke={`var(--ludo-${color})`} strokeWidth={0.02} />
-                  <text x={11} y={6.7} fill={`var(--ludo-${color})`} fontSize={0.4} fontWeight={800} textAnchor="middle" opacity={0.8}>
+                  <circle cx={19.1} cy={8.8} r={0.38} fill={`var(--ludo-${color}-dark)`} opacity={0.4} stroke={`var(--ludo-${color})`} strokeWidth={0.02} />
+                  <circle cx={20.4} cy={8.8} r={0.38} fill={`var(--ludo-${color}-dark)`} opacity={0.4} stroke={`var(--ludo-${color})`} strokeWidth={0.02} />
+                  <circle cx={19.1} cy={10.2} r={0.38} fill={`var(--ludo-${color}-dark)`} opacity={0.4} stroke={`var(--ludo-${color})`} strokeWidth={0.02} />
+                  <circle cx={20.4} cy={10.2} r={0.38} fill={`var(--ludo-${color}-dark)`} opacity={0.4} stroke={`var(--ludo-${color})`} strokeWidth={0.02} />
+                  <text x={19.75} y={11.4} fill={`var(--ludo-${color})`} fontSize={0.45} fontWeight={800} textAnchor="middle" opacity={0.8}>
                     {color.toUpperCase()}
                   </text>
 
