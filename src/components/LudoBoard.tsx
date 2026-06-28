@@ -305,7 +305,6 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
 
         .token-element {
           transition: transform 0.22s cubic-bezier(0.25, 1, 0.5, 1);
-          filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35));
         }
 
         .token-circle {
@@ -609,7 +608,15 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
                   style={{ cursor: 'pointer' }}
                 />
               )}
-              {/* Token Shadow and Base */}
+              {/* SVG Vector Shadow for 100% performant graphics rendering without CSS filters */}
+              <circle
+                cx={0.04}
+                cy={0.04}
+                r={0.34}
+                fill="rgba(0, 0, 0, 0.35)"
+                style={{ pointerEvents: 'none' }}
+              />
+              {/* Token Base */}
               <circle
                 cx={0}
                 cy={0}
