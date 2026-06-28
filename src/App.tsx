@@ -38,6 +38,8 @@ export const App: React.FC = () => {
   const [micMuted, setMicMuted] = useState(false);
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; color: PlayerColor; emoji: string }[]>([]);
 
+  const [chatBubbles, setChatBubbles] = useState<Record<string, string>>({});
+
   // Voice Chat refs
   const localStreamRef = useRef<MediaStream | null>(null);
   const activeCallsRef = useRef<Map<string, any>>(new Map());
@@ -54,15 +56,18 @@ export const App: React.FC = () => {
     logs: [],
     chat: [],
     gameStarted: false,
-    statusMessage: 'Welcome to Ludo! Host a room or join one to start.',
+    statusMessage: '',
     consecutiveSixes: 0,
     turnTimer: null,
     isPaused: false
   });
 
-  // Reference to game state for event handlers / callbacks
-  const stateRef = useRef(gameState);
-  stateRef.current = gameState;
+  // Keep state sync ref for async intervals
+  const stateRef = useRef<GameState>(gameState);
+  useEffect(() => {
+    stateRef.current = gameState;
+  }, [gameState]);
+
   const isWalkingRef = useRef(false);
 
   // Track the interval for safety client join retries
@@ -115,13 +120,13 @@ export const App: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isHost, gameState.gameStarted, gameState.winnerColor, gameState.activePlayerIndex, gameState.turnTimer === null, gameState.isPaused]);
+  }, [isHost, gameState.gameStarted, gameState.winnerColor, gameState.isPaused, gameState.activePlayerIndex, gameState.turnTimer]);
 
   // Sound toggle helper
   const toggleSound = () => {
-    const newVal = !soundEnabled;
-    setSoundEnabled(newVal);
-    audio.setEnabled(newVal);
+    const nextMuted = soundEnabled;
+    audio.setEnabled(!nextMuted);
+    setSoundEnabled(!nextMuted);
   };
 
   const toggleMicMute = () => {
@@ -144,9 +149,22 @@ export const App: React.FC = () => {
     });
   };
 
+  const sendQuickChat = (message: string) => {
+    const myColor = gameState.players.find((p) => p.id === peerService.getPlayerId())?.color || 'red';
+    triggerFloatingEmoji(myColor, message);
+
+    peerService.broadcast({
+      type: 'SEND_EMOJI',
+      payload: { color: myColor, emoji: message }
+    });
+  };
+
   const triggerFloatingEmoji = (color: PlayerColor, emoji: string) => {
     const id = 'emoji_' + Math.random().toString(36).substr(2, 9);
     setFloatingEmojis((prev) => [...prev, { id, color, emoji }]);
+    
+    // Set speech bubble message popup over player panel
+    setChatBubbles((prev) => ({ ...prev, [color]: emoji }));
     
     // Minor beep effect for visual emoji popup feedback
     audio.playMove();
@@ -154,6 +172,16 @@ export const App: React.FC = () => {
     setTimeout(() => {
       setFloatingEmojis((prev) => prev.filter((item) => item.id !== id));
     }, 2000);
+
+    setTimeout(() => {
+      setChatBubbles((prev) => {
+        const next = { ...prev };
+        if (next[color] === emoji) {
+          delete next[color];
+        }
+        return next;
+      });
+    }, 3000);
   };
 
   const broadcastActionEmoji = (color: PlayerColor, emoji: string) => {
@@ -1243,6 +1271,16 @@ export const App: React.FC = () => {
             gap: 12px;
             padding: 8px;
           }
+        .player-hud-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+          width: 100%;
+        }
+
+        @keyframes bounce {
+          0%, 100% { transform: translate(-50%, 0); }
+          50% { transform: translate(-50%, -4px); }
         }
 
         .game-controls-panel {
@@ -1628,70 +1666,192 @@ export const App: React.FC = () => {
                 </button>
               ))}
             </div>
+
+            {/* Quick Chat Selection Bar */}
+            <div
+              className="glass-panel"
+              style={{
+                display: 'flex',
+                gap: 6,
+                padding: '6px 12px',
+                borderRadius: '12px',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%',
+                maxWidth: 400,
+                boxSizing: 'border-box',
+                marginTop: 6,
+                flexWrap: 'wrap'
+              }}
+            >
+              {['Good luck!', 'Nice move!', 'Oops!', 'Haha!', 'Well played!', 'Thanks!'].map((phrase) => (
+                <button
+                  key={phrase}
+                  onClick={() => sendQuickChat(phrase)}
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: 'white',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    padding: '4px 8px',
+                    transition: 'all 0.2s ease'
+                  }}
+                  className="quick-chat-btn"
+                >
+                  {phrase}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="game-controls-panel glass-panel">
-              <div className="status-box">
-                {gameState.statusMessage || 'Welcome to Ludo! Roll to begin.'}
-              </div>
+            <div className="player-hud-grid">
+              {gameState.players.map((p, idx) => {
+                const isActive = idx === gameState.activePlayerIndex;
+                const isMe = p.id === myPlayerId;
+                const isTurnTimerActive = isActive && gameState.turnTimer !== null;
 
-              <div className="dice-outer">
-                <Dice
-                  value={gameState.diceValue}
-                  isRolling={gameState.diceState === 'rolling'}
-                  onClick={triggerRollIntent}
-                  disabled={!isMyTurn || gameState.hasRolled}
-                  playerColor={activePlayer?.color || null}
-                />
-                
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--neutral-500)', textTransform: 'uppercase' }}>
-                      Active Turn
-                    </span>
-                    {gameState.turnTimer !== null && (
-                      <span
-                        style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 800,
-                          color: gameState.turnTimer <= 5 ? '#f87171' : '#eab308',
-                          padding: '1px 6px',
-                          background: 'rgba(255,255,255,0.05)',
-                          borderRadius: '8px',
-                          border: `1px solid ${gameState.turnTimer <= 5 ? '#ef4444' : 'rgba(255,255,255,0.1)'}`,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 2
-                        }}
-                        className={gameState.turnTimer <= 5 ? 'animate-pulse' : ''}
-                      >
-                        ⏱️ {gameState.turnTimer}s
-                      </span>
-                    )}
-                  </div>
+                return (
                   <div
+                    key={p.id}
+                    className={`player-hud-card ${isActive ? 'active' : ''} ${p.isConnected ? 'online' : 'offline'}`}
                     style={{
-                      fontSize: '1.2rem',
-                      fontWeight: 800,
-                      color: activePlayer ? `var(--ludo-${activePlayer.color})` : 'white',
+                      position: 'relative',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 8
+                      gap: 8,
+                      padding: '8px 12px',
+                      background: isActive ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                      borderRadius: '12px',
+                      border: `1px solid ${isActive ? `var(--ludo-${p.color})` : 'rgba(255,255,255,0.08)'}`,
+                      boxShadow: isActive ? `0 0 10px var(--ludo-${p.color}-glow)` : 'none',
+                      transition: 'all 0.3s ease',
+                      width: '100%',
+                      boxSizing: 'border-box'
                     }}
                   >
-                    <span
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        background: activePlayer ? `var(--ludo-${activePlayer.color})` : 'white',
-                        boxShadow: activePlayer ? `0 0 10px var(--ludo-${activePlayer.color})` : 'none'
-                      }}
-                    />
-                    {activePlayer?.name} {isMyTurn ? '(You)' : ''} {activePlayer?.wins ? `(${activePlayer.wins} wins)` : ''}
+                    <div style={{ position: 'relative', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {isTurnTimerActive && (
+                        <svg
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: 38,
+                            height: 38,
+                            transform: 'rotate(-90deg)',
+                            zIndex: 1
+                          }}
+                          viewBox="0 0 36 36"
+                        >
+                          <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
+                          <circle
+                            cx="18"
+                            cy="18"
+                            r="16"
+                            fill="none"
+                            stroke={`var(--ludo-${p.color})`}
+                            strokeWidth="2.8"
+                            strokeDasharray={`${(gameState.turnTimer! / 30) * 100}, 100`}
+                            strokeLinecap="round"
+                            style={{ transition: 'stroke-dasharray 0.2s linear' }}
+                          />
+                        </svg>
+                      )}
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          background: `var(--ludo-${p.color}-dark)`,
+                          border: `2.5px solid var(--ludo-${p.color})`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 800,
+                          fontSize: '0.8rem',
+                          color: 'white',
+                          zIndex: 2
+                        }}
+                      >
+                        {p.name.substring(0, 2).toUpperCase()}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, overflow: 'hidden' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'left' }}>
+                        {p.name} {isMe && '(You)'}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', color: p.isConnected ? '#4ade80' : '#ef4444', fontWeight: 600 }}>
+                        {p.isBot ? '🤖 Bot' : p.isConnected ? '🟢 Online' : '🔴 Left'}
+                      </span>
+                    </div>
+
+                    {chatBubbles[p.color] && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: '110%',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: '#1e293b',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          padding: '6px 12px',
+                          borderRadius: '12px',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap',
+                          boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+                          zIndex: 100,
+                          color: 'white',
+                          animation: 'bounce 0.5s ease'
+                        }}
+                      >
+                        {chatBubbles[p.color]}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: 0,
+                            height: 0,
+                            borderLeft: '6px solid transparent',
+                            borderRight: '6px solid transparent',
+                            borderTop: '6px solid #1e293b'
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
+                );
+              })}
+            </div>
+
+            <div className="dice-outer" style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+              <Dice
+                value={gameState.diceValue}
+                isRolling={gameState.diceState === 'rolling'}
+                onClick={triggerRollIntent}
+                disabled={!isMyTurn || gameState.hasRolled}
+                playerColor={activePlayer?.color || null}
+              />
+
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--neutral-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Current Turn
+                </span>
+                <div style={{ fontSize: '1.15rem', fontWeight: 900, color: activePlayer ? `var(--ludo-${activePlayer.color})` : 'white', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {activePlayer?.name} {isMyTurn ? '(You)' : ''}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--neutral-300)' }}>
+                  {gameState.statusMessage || 'Welcome! Roll to begin.'}
                 </div>
               </div>
+            </div>
 
               {isHost && (
                 <div style={{ display: 'flex', gap: 12, width: '100%' }}>

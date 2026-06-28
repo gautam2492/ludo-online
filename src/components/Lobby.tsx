@@ -39,6 +39,45 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [copied, setCopied] = useState(false);
   const [mode, setMode] = useState<'selection' | 'hosting' | 'joining'>('selection');
 
+  const [coins, setCoins] = useState(() => Number(localStorage.getItem('ludo_player_coins') || '100'));
+  const [level, setLevel] = useState(() => Number(localStorage.getItem('ludo_player_level') || '1'));
+  const [xp, setXp] = useState(() => Number(localStorage.getItem('ludo_player_xp') || '0'));
+  const [stats] = useState(() => ({
+    gamesPlayed: Number(localStorage.getItem('ludo_games_played') || '0'),
+    gamesWon: Number(localStorage.getItem('ludo_games_won') || '0')
+  }));
+  const [claimedToday, setClaimedToday] = useState(() => {
+    const lastClaim = localStorage.getItem('ludo_last_claim_date');
+    const today = new Date().toDateString();
+    return lastClaim === today;
+  });
+
+  const handleClaimDailyBonus = () => {
+    if (claimedToday) return;
+    const nextCoins = coins + 150;
+    const nextXp = xp + 50;
+    
+    let nextLevel = level;
+    let finalXp = nextXp;
+    if (finalXp >= 100) {
+      nextLevel += 1;
+      finalXp -= 100;
+      audio.playWin();
+    } else {
+      audio.playMove();
+    }
+    
+    localStorage.setItem('ludo_player_coins', String(nextCoins));
+    localStorage.setItem('ludo_player_xp', String(finalXp));
+    localStorage.setItem('ludo_player_level', String(nextLevel));
+    localStorage.setItem('ludo_last_claim_date', new Date().toDateString());
+    
+    setCoins(nextCoins);
+    setXp(finalXp);
+    setLevel(nextLevel);
+    setClaimedToday(true);
+  };
+
   const colors: PlayerColor[] = ['red', 'green', 'yellow', 'blue', 'orange', 'purple'];
   
   const handleHostClick = () => {
@@ -267,6 +306,60 @@ export const Lobby: React.FC<LobbyProps> = ({
       <div className="lobby-card glass-panel">
         {mode === 'selection' && (
           <>
+            <div className="profile-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 4, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: '50%', fontSize: '1.05rem', fontWeight: 800, background: 'linear-gradient(135deg, var(--ludo-red), var(--ludo-blue))', border: '2px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                    {name ? name.substring(0, 2).toUpperCase() : 'P'}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, color: 'white', fontSize: '1rem' }}>{name || 'Guest Player'}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#60a5fa', fontWeight: 700 }}>Lvl {level} Ludo Champion</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', padding: '2px 8px', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    🪙 {coins} Coins
+                  </span>
+                  <div style={{ width: 80, height: 4, background: 'rgba(255,255,255,0.1)', borderRadius: 2, overflow: 'hidden', marginTop: 4 }}>
+                    <div style={{ width: `${xp}%`, height: '100%', background: '#3b82f6' }} />
+                  </div>
+                </div>
+              </div>
+
+              {!claimedToday ? (
+                <button
+                  type="button"
+                  onClick={handleClaimDailyBonus}
+                  className="glass-button glow-green"
+                  style={{ width: '100%', padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                >
+                  🎁 Claim Daily Bonus (+150 Coins!)
+                </button>
+              ) : (
+                <div style={{ width: '100%', padding: '6px 12px', fontSize: '0.75rem', color: '#a7f3d0', background: 'rgba(16,185,129,0.06)', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.15)', textAlign: 'center', fontWeight: 700 }}>
+                  ✅ Daily Reward Claimed Today
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, background: 'rgba(0,0,0,0.15)', padding: '6px 8px', borderRadius: 8, border: '1px solid var(--border-light)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--neutral-400)', textTransform: 'uppercase' }}>Played</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>{stats.gamesPlayed}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--neutral-400)', textTransform: 'uppercase' }}>Won</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>{stats.gamesWon}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--neutral-400)', textTransform: 'uppercase' }}>Win Rate</span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'white' }}>
+                    {stats.gamesPlayed > 0 ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100) : 0}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
             <div className="input-group">
               <label className="input-label">Your Nickname</label>
               <div className="input-with-icon">
