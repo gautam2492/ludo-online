@@ -1235,8 +1235,11 @@ export const App: React.FC = () => {
           flex-direction: column;
           gap: 8px;
           width: 100%;
+          height: 100%;
+          max-height: 100%;
           align-items: center;
           justify-content: center;
+          overflow: hidden;
         }
 
         @media (min-width: 768px) {
