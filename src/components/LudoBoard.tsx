@@ -283,19 +283,19 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
           box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
         }
 
-        @keyframes pulse-bounce {
-          0%, 100% { transform: scale(1); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3)); }
-          50% { transform: scale(1.15) translateY(-1px); filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4)); }
+        @keyframes pulse-glow {
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(255,255,255,0.4)); }
+          50% { transform: scale(1.08); filter: drop-shadow(0 0 12px rgba(255,255,255,0.8)); }
         }
 
         .token-active {
-          animation: pulse-bounce 1.2s infinite ease-in-out;
+          animation: pulse-glow 1.2s infinite ease-in-out;
           cursor: pointer;
         }
 
         .token-element {
-          transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+          transition: transform 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+          filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35));
         }
 
         .token-circle {
@@ -582,6 +582,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
           return (
             <g
               key={tokenKey}
+              transform={`translate(${cx}, ${cy})`}
               className={`token-element ${canMove ? 'token-active' : ''}`}
               onClick={() => canMove && onTokenClick(id)}
               onMouseEnter={() => canMove && setHoveredTokenId(tokenKey)}
@@ -591,8 +592,8 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
               {/* Invisible large touch target overlay for mobile ease of use */}
               {canMove && (
                 <circle
-                  cx={cx}
-                  cy={cy}
+                  cx={0}
+                  cy={0}
                   r={0.65}
                   fill="transparent"
                   style={{ cursor: 'pointer' }}
@@ -600,8 +601,8 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
               )}
               {/* Token Shadow and Base */}
               <circle
-                cx={cx}
-                cy={cy}
+                cx={0}
+                cy={0}
                 r={0.34}
                 fill={colorMap[color]}
                 className="token-circle"
@@ -612,16 +613,16 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
               
               {/* Glossy overlay */}
               <circle
-                cx={cx - 0.08}
-                cy={cy - 0.08}
+                cx={-0.08}
+                cy={-0.08}
                 r={0.09}
                 className="token-inner"
               />
 
               {/* Unique Number tag */}
               <text
-                x={cx}
-                y={cy + 0.1}
+                x={0}
+                y={0.1}
                 fill="#ffffff"
                 fontSize={0.28}
                 fontWeight={800}
