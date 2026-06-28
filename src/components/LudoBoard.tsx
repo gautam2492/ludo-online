@@ -253,9 +253,9 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
     <div className="board-container">
       <style>{`
         .board-container {
-          width: min(100%, calc(100vh - 310px));
-          width: min(100%, calc(100dvh - 310px));
-          max-width: 520px;
+          width: min(100%, calc(100vh - 290px));
+          width: min(100%, calc(100dvh - 290px));
+          max-width: min(92vw, 520px);
           margin: 0 auto;
           aspect-ratio: 1 / 1;
           display: flex;
@@ -264,21 +264,31 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
           position: relative;
         }
 
-        @media (min-width: 1024px) {
+        @media (orientation: landscape) {
           .board-container {
-            width: min(100%, calc(100vh - 340px));
-            width: min(100%, calc(100dvh - 340px));
-            max-width: 800px;
+            width: min(100%, calc(100vh - 120px));
+            width: min(100%, calc(100dvh - 120px));
+            max-width: 620px;
           }
         }
 
         .ludo-board-svg {
           width: 100%;
           height: 100%;
-          background: rgba(11, 15, 25, 0.6);
+          background: rgba(11, 15, 25, 0.65);
           border: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 20px;
           box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        @keyframes pulse-bounce {
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3)); }
+          50% { transform: scale(1.15) translateY(-1px); filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4)); }
+        }
+
+        .token-active {
+          animation: pulse-bounce 1.2s infinite ease-in-out;
+          cursor: pointer;
         }
 
         .token-element {

@@ -156,6 +156,14 @@ export const App: React.FC = () => {
     }, 2000);
   };
 
+  const broadcastActionEmoji = (color: PlayerColor, emoji: string) => {
+    triggerFloatingEmoji(color, emoji);
+    peerService.broadcast({
+      type: 'SEND_EMOJI',
+      payload: { color, emoji }
+    });
+  };
+
   // Start Voice Chat: request mic, and call everyone else
   const startVoiceChat = async () => {
     try {
@@ -388,6 +396,10 @@ export const App: React.FC = () => {
         const activePl = prev.players[prev.activePlayerIndex];
         const isSix = finalVal === 6;
         const newSixesCount = isSix ? prev.consecutiveSixes + 1 : 0;
+
+        if (isSix && newSixesCount < 3) {
+          broadcastActionEmoji(activePl.color, '🔥');
+        }
         
         let updatedLogs = [...prev.logs];
         
@@ -506,11 +518,20 @@ export const App: React.FC = () => {
           if (reachedGoal) {
             logMsg = `🎉 ${activePlayer.name}'s token ${tokenId + 1} got home!`;
             audio.playHome();
+            setTimeout(() => {
+              broadcastActionEmoji(activePlayer.color, '🎉');
+            }, 50);
           } else if (capturedFlag) {
             captures.forEach((opp) => {
               logMsg = `💥 ${activePlayer.name} captured Opponent's token (${opp.color.toUpperCase()})!`;
             });
             audio.playCapture();
+            setTimeout(() => {
+              broadcastActionEmoji(activePlayer.color, '💥');
+              captures.forEach((opp) => {
+                broadcastActionEmoji(opp.color, '😢');
+              });
+            }, 50);
           }
 
           let nextState = {
@@ -1159,47 +1180,62 @@ export const App: React.FC = () => {
           }
         }
 
+        .board-section {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+          width: 100%;
+          max-height: 100%;
+        }
+
         .game-column {
           display: flex;
           flex-direction: column;
           gap: 16px;
-          justify-content: center;
-          align-items: center;
-          max-height: 100%;
-          overflow: hidden;
           width: 100%;
+          align-items: center;
+          justify-content: center;
         }
 
-        @media (orientation: landscape) and (max-height: 500px) {
+        @media (orientation: landscape) {
           .main-game {
             flex-direction: row;
             align-items: center;
             justify-content: center;
-            gap: 24px;
-            padding: 8px;
-            height: calc(100vh - 56px);
-            height: calc(100dvh - 56px);
+            gap: 32px;
+            padding: 16px;
+            height: calc(100vh - 64px);
+            height: calc(100dvh - 64px);
+          }
+
+          .board-section {
+            flex: 1;
+            max-height: 100%;
+            max-width: min(100%, calc(100vh - 120px));
+            max-width: min(100%, calc(100dvh - 120px));
           }
 
           .game-column {
             flex-direction: row;
             align-items: center;
             justify-content: center;
-            gap: 24px;
+            gap: 32px;
             height: 100%;
-            width: auto;
+            width: 100%;
           }
 
           .game-controls-panel {
-            max-width: 280px;
-            padding: 8px;
-            gap: 8px;
+            max-width: 380px;
+            width: 100%;
+            padding: 12px;
+            gap: 12px;
           }
 
           .dice-outer {
             flex-direction: column;
-            gap: 8px;
-            padding: 4px;
+            gap: 12px;
+            padding: 8px;
           }
         }
 
@@ -1213,12 +1249,6 @@ export const App: React.FC = () => {
           width: 100%;
           max-width: 520px;
           box-sizing: border-box;
-        }
-
-        @media (min-width: 1024px) {
-          .game-controls-panel {
-            max-width: 800px;
-          }
         }
 
         .status-box {
@@ -1298,15 +1328,15 @@ export const App: React.FC = () => {
 
         @keyframes floatUpFade {
           0% {
-            transform: translateY(0) scale(0.4);
+            transform: translate(-50%, -50%) translateY(0) scale(0.4);
             opacity: 0;
           }
           15% {
-            transform: translateY(-15px) scale(1.3);
+            transform: translate(-50%, -50%) translateY(-15px) scale(1.3);
             opacity: 1;
           }
           100% {
-            transform: translateY(-90px) scale(0.9);
+            transform: translate(-50%, -50%) translateY(-90px) scale(0.9);
             opacity: 0;
           }
         }
@@ -1472,10 +1502,11 @@ export const App: React.FC = () => {
       ) : (
         <main className="main-game">
           {/* Centered Board & Controls */}
-          <div className="game-column" style={{ position: 'relative' }}>
+          <div className="game-column">
+            <div className="board-section">
             <div style={{ position: 'relative' }}>
               <LudoBoard
-                tokens={gameState.tokens}
+                tokens={gameState.tokens.filter((t) => gameState.players.some((p) => p.color === t.color))}
                 activeColor={activePlayer?.color || null}
                 diceValue={gameState.diceValue}
                 hasRolled={gameState.hasRolled}
@@ -1483,24 +1514,41 @@ export const App: React.FC = () => {
                 playersCount={gameState.players.length}
               />
               {floatingEmojis.map((item) => {
+                const list: PlayerColor[] = ['red', 'green', 'yellow', 'blue', 'orange', 'purple'];
+                const colorIdx = list.indexOf(item.color);
+                const isSixPlayer = gameState.players.length > 4;
+
                 const style: React.CSSProperties = {
                   position: 'absolute',
                   zIndex: 60,
-                  pointerEvents: 'none'
+                  pointerEvents: 'none',
+                  transform: 'translate(-50%, -50%)',
                 };
-                if (item.color === 'red') {
-                  style.top = '20%';
-                  style.left = '20%';
-                } else if (item.color === 'green') {
-                  style.top = '20%';
-                  style.right = '20%';
-                } else if (item.color === 'yellow') {
-                  style.bottom = '20%';
-                  style.right = '20%';
+
+                if (isSixPlayer) {
+                  const angle = colorIdx * 60 - 30; // degrees
+                  const rad = (angle * Math.PI) / 180;
+                  style.left = `calc(50% + ${36 * Math.cos(rad)}%)`;
+                  style.top = `calc(50% + ${36 * Math.sin(rad)}%)`;
                 } else {
-                  style.bottom = '20%';
-                  style.left = '20%';
+                  if (item.color === 'red') {
+                    style.top = '22%';
+                    style.left = '22%';
+                  } else if (item.color === 'green') {
+                    style.top = '22%';
+                    style.left = '78%';
+                  } else if (item.color === 'yellow') {
+                    style.top = '78%';
+                    style.left = '78%';
+                  } else if (item.color === 'blue') {
+                    style.top = '78%';
+                    style.left = '22%';
+                  } else {
+                    style.top = '50%';
+                    style.left = '50%';
+                  }
                 }
+
                 return (
                   <span key={item.id} className="emoji-bubble" style={style}>
                     {item.emoji}
@@ -1574,8 +1622,9 @@ export const App: React.FC = () => {
                 </button>
               ))}
             </div>
+          </div>
 
-            <div className="game-controls-panel glass-panel">
+          <div className="game-controls-panel glass-panel">
               <div className="status-box">
                 {gameState.statusMessage || 'Welcome to Ludo! Roll to begin.'}
               </div>
