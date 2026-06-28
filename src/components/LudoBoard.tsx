@@ -283,14 +283,20 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
           box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
         }
 
-        @keyframes pulse-glow {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.12); }
+        @keyframes pulse-highlight {
+          0%, 100% {
+            opacity: 1;
+            stroke-width: 0.06px;
+          }
+          50% {
+            opacity: 0.75;
+            stroke-width: 0.14px;
+          }
         }
 
         .token-circle-active {
-          animation: pulse-glow 1.2s infinite ease-in-out;
-          transform-origin: 0 0;
+          animation: pulse-highlight 1.2s infinite ease-in-out;
+          stroke: #ffffff !important;
         }
 
         .token-element-active {
@@ -610,9 +616,6 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
                 r={0.34}
                 fill={colorMap[color]}
                 className={`token-circle ${canMove ? 'token-circle-active' : ''}`}
-                style={{
-                  filter: canMove ? `drop-shadow(0 0 4px ${colorMap[color]})` : undefined
-                }}
               />
               
               {/* Glossy overlay */}
