@@ -139,6 +139,10 @@ class PeerService {
         (conn as any).playerName = msg.payload.name;
       }
       
+      if ((conn as any).playerId) {
+        (msg as any).senderPlayerId = (conn as any).playerId;
+      }
+      
       if (this.onMessageCallback) {
         this.onMessageCallback(msg);
       }

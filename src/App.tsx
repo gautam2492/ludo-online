@@ -740,13 +740,19 @@ export const App: React.FC = () => {
 
       case 'ROLL_DICE':
         if (isHost) {
-          rollDice();
+          const activePl = getActivePlayer(gameState);
+          if (activePl && (msg as any).senderPlayerId === activePl.id) {
+            rollDice();
+          }
         }
         break;
 
       case 'MOVE_TOKEN':
         if (isHost) {
-          moveToken(msg.payload.tokenId);
+          const activePl = getActivePlayer(gameState);
+          if (activePl && (msg as any).senderPlayerId === activePl.id) {
+            moveToken(msg.payload.tokenId);
+          }
         }
         break;
 
