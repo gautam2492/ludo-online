@@ -284,12 +284,16 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
         }
 
         @keyframes pulse-glow {
-          0%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px rgba(255,255,255,0.4)); }
-          50% { transform: scale(1.08); filter: drop-shadow(0 0 12px rgba(255,255,255,0.8)); }
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.12); }
         }
 
-        .token-active {
+        .token-circle-active {
           animation: pulse-glow 1.2s infinite ease-in-out;
+          transform-origin: 0 0;
+        }
+
+        .token-element-active {
           cursor: pointer;
         }
 
@@ -583,7 +587,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
             <g
               key={tokenKey}
               transform={`translate(${cx}, ${cy})`}
-              className={`token-element ${canMove ? 'token-active' : ''}`}
+              className={`token-element ${canMove ? 'token-element-active' : ''}`}
               onClick={() => canMove && onTokenClick(id)}
               onMouseEnter={() => canMove && setHoveredTokenId(tokenKey)}
               onMouseLeave={() => setHoveredTokenId(null)}
@@ -605,7 +609,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
                 cy={0}
                 r={0.34}
                 fill={colorMap[color]}
-                className="token-circle"
+                className={`token-circle ${canMove ? 'token-circle-active' : ''}`}
                 style={{
                   filter: canMove ? `drop-shadow(0 0 4px ${colorMap[color]})` : undefined
                 }}
