@@ -255,22 +255,31 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
     <div className="board-container">
       <style>{`
         .board-container {
-          width: min(100%, calc(100vh - 290px));
-          width: min(100%, calc(100dvh - 290px));
+          width: 100%;
           max-width: min(92vw, 520px);
-          margin: 0 auto;
           aspect-ratio: 1 / 1;
+          margin: 0 auto;
           display: flex;
           align-items: center;
           justify-content: center;
           position: relative;
         }
 
+        @media (max-width: 767px) and (orientation: portrait) {
+          .board-container {
+            max-width: min(92vw, calc(100dvh - 370px));
+          }
+        }
+
+        @media (min-width: 768px) and (orientation: portrait) {
+          .board-container {
+            max-width: min(92vw, calc(100dvh - 290px));
+          }
+        }
+
         @media (orientation: landscape) {
           .board-container {
-            width: min(100%, calc(100vh - 120px));
-            width: min(100%, calc(100dvh - 120px));
-            max-width: 620px;
+            max-width: min(95vw, calc(100dvh - 120px));
           }
         }
 

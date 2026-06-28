@@ -1193,12 +1193,12 @@ export const App: React.FC = () => {
           flex-direction: column;
           justify-content: center;
           align-items: center;
-          gap: 16px;
-          padding: 12px;
-          padding-top: max(12px, env(safe-area-inset-top));
-          padding-bottom: max(12px, env(safe-area-inset-bottom));
-          padding-left: max(12px, env(safe-area-inset-left));
-          padding-right: max(12px, env(safe-area-inset-right));
+          gap: 8px;
+          padding: 8px;
+          padding-top: max(8px, env(safe-area-inset-top));
+          padding-bottom: max(8px, env(safe-area-inset-bottom));
+          padding-left: max(8px, env(safe-area-inset-left));
+          padding-right: max(8px, env(safe-area-inset-right));
           max-width: 1500px;
           width: 100%;
           margin: 0 auto;
@@ -1211,6 +1211,7 @@ export const App: React.FC = () => {
         @media (min-width: 768px) {
           .main-game {
             padding: 24px;
+            gap: 16px;
           }
         }
 
@@ -1218,18 +1219,30 @@ export const App: React.FC = () => {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 16px;
+          gap: 8px;
           width: 100%;
           max-height: 100%;
+        }
+
+        @media (min-width: 768px) {
+          .board-section {
+            gap: 16px;
+          }
         }
 
         .game-column {
           display: flex;
           flex-direction: column;
-          gap: 16px;
+          gap: 8px;
           width: 100%;
           align-items: center;
           justify-content: center;
+        }
+
+        @media (min-width: 768px) {
+          .game-column {
+            gap: 16px;
+          }
         }
 
         @media (orientation: landscape) {
@@ -1284,15 +1297,22 @@ export const App: React.FC = () => {
         }
 
         .game-controls-panel {
-          padding: 12px 16px;
+          padding: 8px 12px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 12px;
+          gap: 8px;
           text-align: center;
           width: 100%;
           max-width: 520px;
           box-sizing: border-box;
+        }
+
+        @media (min-width: 768px) {
+          .game-controls-panel {
+            padding: 12px 16px;
+            gap: 12px;
+          }
         }
 
         .status-box {
