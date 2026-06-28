@@ -72,7 +72,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
     if (position >= 78 && position <= 82) {
       const homeIdx = position - 78;
       const rx = 15;
-      const ry = 13.2 - homeIdx * 1.0;
+      const ry = 9.2 + homeIdx * 1.0;
       return rotatePoint(rx, ry, cx, cy, angle);
     }
 
