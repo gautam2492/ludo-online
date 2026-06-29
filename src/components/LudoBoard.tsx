@@ -267,7 +267,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
 
         @media (max-width: 767px) and (orientation: portrait) {
           .board-container {
-            max-width: min(92vw, calc(100dvh - 400px));
+            max-width: min(92vw, calc(100dvh - 320px));
           }
         }
 

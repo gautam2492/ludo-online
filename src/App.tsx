@@ -12,7 +12,7 @@ import {
   hasValidMoves,
   hasPlayerWon
 } from './utils/ludoLogic';
-import { Volume2, VolumeX, LogOut, RotateCcw, Mic, MicOff, Pause, Play } from 'lucide-react';
+import { Volume2, VolumeX, LogOut, RotateCcw, Mic, MicOff, Pause, Play, MessageSquare, X } from 'lucide-react';
 
 
 const INITIAL_TOKENS = (): Token[] => {
@@ -39,6 +39,7 @@ export const App: React.FC = () => {
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; color: PlayerColor; emoji: string }[]>([]);
 
   const [chatBubbles, setChatBubbles] = useState<Record<string, string>>({});
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Voice Chat refs
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -1188,6 +1189,7 @@ export const App: React.FC = () => {
         }
 
         .main-game {
+          position: relative;
           flex: 1;
           display: flex;
           flex-direction: column;
@@ -1383,6 +1385,17 @@ export const App: React.FC = () => {
 
         .emoji-selector-btn:active {
           transform: scale(0.9);
+        }
+
+        @keyframes slideUpFade {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, 15px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translate(-50%, 0) scale(1);
+          }
         }
 
         /* Smooth transitions for pawn movements */
@@ -1657,78 +1670,7 @@ export const App: React.FC = () => {
               )}
             </div>
 
-            {/* Emoji Selection Bar */}
-            <div
-              className="glass-panel"
-              style={{
-                display: 'flex',
-                gap: 8,
-                padding: '6px 12px',
-                borderRadius: '12px',
-                justifyContent: 'center',
-                alignItems: 'center',
-                width: '100%',
-                maxWidth: 400,
-                boxSizing: 'border-box'
-              }}
-            >
-              {['😂', '😮', '😢', '😠', '🎉', '👍', '🔥'].map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => sendEmoji(emoji)}
-                  style={{
-                    fontSize: '1.4rem',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px 8px'
-                  }}
-                  className="emoji-selector-btn"
-                >
-                  {emoji}
-                </button>
-              ))}
             </div>
-
-            {/* Quick Chat Selection Bar */}
-            <div
-              className="glass-panel"
-              style={{
-                display: 'flex',
-                gap: 6,
-                padding: '6px 12px',
-                borderRadius: '12px',
-                justifyContent: 'center',
-                alignItems: 'center',
-                width: '100%',
-                maxWidth: 400,
-                boxSizing: 'border-box',
-                marginTop: 6,
-                flexWrap: 'wrap'
-              }}
-            >
-              {['Good luck!', 'Nice move!', 'Oops!', 'Haha!', 'Well played!', 'Thanks!'].map((phrase) => (
-                <button
-                  key={phrase}
-                  onClick={() => sendQuickChat(phrase)}
-                  style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    color: 'white',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    padding: '4px 8px',
-                    transition: 'all 0.2s ease'
-                  }}
-                  className="quick-chat-btn"
-                >
-                  {phrase}
-                </button>
-              ))}
-            </div>
-          </div>
 
           <div className="game-controls-panel glass-panel">
             <div className="player-hud-grid">
@@ -1854,7 +1796,7 @@ export const App: React.FC = () => {
               })}
             </div>
 
-            <div className="dice-outer" style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+            <div className="dice-outer" style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
               <Dice
                 value={gameState.diceValue}
                 isRolling={gameState.diceState === 'rolling'}
@@ -1863,17 +1805,36 @@ export const App: React.FC = () => {
                 playerColor={activePlayer?.color || null}
               />
 
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--neutral-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--neutral-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Current Turn
                 </span>
-                <div style={{ fontSize: '1.15rem', fontWeight: 900, color: activePlayer ? `var(--ludo-${activePlayer.color})` : 'white', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ fontSize: '1.05rem', fontWeight: 900, color: activePlayer ? `var(--ludo-${activePlayer.color})` : 'white', display: 'flex', alignItems: 'center', gap: 6, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {activePlayer?.name} {isMyTurn ? '(You)' : ''}
                 </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--neutral-300)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--neutral-300)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
                   {gameState.statusMessage || 'Welcome! Roll to begin.'}
                 </div>
               </div>
+
+              {/* Chat Popover Toggle Button */}
+              <button
+                onClick={() => setIsChatOpen(!isChatOpen)}
+                className={`icon-btn ${isChatOpen ? 'glow-blue' : ''}`}
+                style={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  flexShrink: 0
+                }}
+                title="Send Chat / Emoji"
+              >
+                <MessageSquare size={18} />
+              </button>
             </div>
 
               {isHost && (
@@ -1904,6 +1865,87 @@ export const App: React.FC = () => {
               )}
             </div>
           </div>
+
+          {isChatOpen && (
+            <div
+              className="chat-popover glass-panel"
+              style={{
+                position: 'absolute',
+                bottom: 180,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 200,
+                width: '90%',
+                maxWidth: 340,
+                padding: 14,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                borderRadius: '16px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
+                border: '1px solid var(--border-focus)',
+                background: 'rgba(15, 23, 42, 0.95)',
+                backdropFilter: 'blur(12px)',
+                animation: 'slideUpFade 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+              }}
+            >
+              {/* Header with Close */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--neutral-300)', letterSpacing: '0.05em' }}>SEND REACTION</span>
+                <button
+                  onClick={() => setIsChatOpen(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--neutral-400)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 2 }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              
+              {/* Emojis Grid */}
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', padding: '4px 0' }}>
+                {['😂', '😮', '😢', '😠', '🎉', '👍', '🔥'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => {
+                      sendEmoji(emoji);
+                      setIsChatOpen(false);
+                    }}
+                    style={{ fontSize: '1.4rem', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', transition: 'transform 0.15s ease' }}
+                    className="emoji-selector-btn"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Phrases Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                {['Good luck!', 'Nice move!', 'Oops!', 'Haha!', 'Well played!', 'Thanks!'].map((phrase) => (
+                  <button
+                    key={phrase}
+                    onClick={() => {
+                      sendQuickChat(phrase);
+                      setIsChatOpen(false);
+                    }}
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: 'white',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      padding: '8px 10px',
+                      textAlign: 'center',
+                      transition: 'all 0.15s ease'
+                    }}
+                    className="quick-chat-btn"
+                  >
+                    {phrase}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </main>
       )}
     </div>
