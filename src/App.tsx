@@ -1805,15 +1805,12 @@ export const App: React.FC = () => {
                 playerColor={activePlayer?.color || null}
               />
 
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: '0.7rem', color: 'var(--neutral-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: '0.65rem', color: 'var(--neutral-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Current Turn
                 </span>
                 <div style={{ fontSize: '1.05rem', fontWeight: 900, color: activePlayer ? `var(--ludo-${activePlayer.color})` : 'white', display: 'flex', alignItems: 'center', gap: 6, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {activePlayer?.name} {isMyTurn ? '(You)' : ''}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--neutral-300)', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
-                  {gameState.statusMessage || 'Welcome! Roll to begin.'}
                 </div>
               </div>
 
@@ -1835,6 +1832,11 @@ export const App: React.FC = () => {
               >
                 <MessageSquare size={18} />
               </button>
+            </div>
+
+            {/* Turn Status Message on the next line */}
+            <div style={{ fontSize: '0.8rem', color: 'var(--neutral-300)', width: '100%', textAlign: 'center', marginTop: 4, minHeight: '18px', lineHeight: '1.2' }}>
+              {gameState.statusMessage || 'Welcome! Roll to begin.'}
             </div>
 
               {isHost && (
