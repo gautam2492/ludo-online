@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Token, PlayerColor } from '../types';
 import {
   getTokenCoordinates,
@@ -31,16 +31,95 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
 
   const isSixPlayer = playersCount ? playersCount > 4 : false;
 
-  const rotatePoint = (x: number, y: number, cx: number, cy: number, angle: number) => {
+  const [hoppingTokens, setHoppingTokens] = useState<Record<string, boolean>>({});
+  const prevPositionsRef = useRef<Record<string, number>>({});
+  const [capturedCell, setCapturedCell] = useState<{ x: number; y: number } | null>(null);
+  const [shakeBoard, setShakeBoard] = useState(false);
+  const [svgParticles, setSvgParticles] = useState<{ id: number; cx: number; cy: number; color: string; angle: number; velocity: number }[]>([]);
+
+  useEffect(() => {
+    const newHops: Record<string, boolean> = {};
+    tokens.forEach((t) => {
+      const key = `${t.color}_${t.id}`;
+      const prevPos = prevPositionsRef.current[key];
+      
+      // Hopping check
+      if (prevPos !== undefined && prevPos !== t.position) {
+        newHops[key] = true;
+        setTimeout(() => {
+          setHoppingTokens((prev) => ({ ...prev, [key]: false }));
+        }, 220);
+      }
+
+      // Capture check
+      if (prevPos !== undefined && prevPos > 0 && t.position === 0) {
+        const dummyToken: Token = { ...t, position: prevPos };
+        const coord = getCoordinates(dummyToken);
+        const isSixPl = isSixPlayer;
+        const isGrid = prevPos !== 0 && prevPos !== (isSixPl ? 83 : 57);
+        const cx = coord.x + (isGrid ? 0.5 : 0);
+        const cy = coord.y + (isGrid ? 0.5 : 0);
+
+        setCapturedCell({ x: cx, y: cy });
+        setShakeBoard(true);
+        setTimeout(() => setShakeBoard(false), 500);
+      }
+
+      prevPositionsRef.current[key] = t.position;
+    });
+
+    if (Object.keys(newHops).length > 0) {
+      setHoppingTokens((prev) => ({ ...prev, ...newHops }));
+    }
+  }, [tokens]);
+
+  useEffect(() => {
+    if (!capturedCell) return;
+    const list: typeof svgParticles = [];
+    const colorsList = ['#ff4d6d', '#38b000', '#ffb703', '#00b4d8', '#ffffff'];
+    for (let i = 0; i < 15; i++) {
+      list.push({
+        id: Math.random(),
+        cx: capturedCell.x,
+        cy: capturedCell.y,
+        color: colorsList[Math.floor(Math.random() * colorsList.length)],
+        angle: Math.random() * Math.PI * 2,
+        velocity: Math.random() * 0.14 + 0.1
+      });
+    }
+    setSvgParticles(list);
+    setCapturedCell(null);
+
+    let frame = 0;
+    const interval = setInterval(() => {
+      setSvgParticles((prev) => {
+        if (frame > 25) {
+          clearInterval(interval);
+          return [];
+        }
+        frame++;
+        return prev.map((p) => ({
+          ...p,
+          cx: p.cx + Math.cos(p.angle) * p.velocity,
+          cy: p.cy + Math.sin(p.angle) * p.velocity + 0.045, // gravity
+          velocity: p.velocity * 0.91 // friction
+        }));
+      });
+    }, 20);
+
+    return () => clearInterval(interval);
+  }, [capturedCell]);
+
+  function rotatePoint(x: number, y: number, cx: number, cy: number, angle: number) {
     const rad = (angle * Math.PI) / 180;
     const dx = x - cx;
     const dy = y - cy;
     const rx = dx * Math.cos(rad) - dy * Math.sin(rad);
     const ry = dx * Math.sin(rad) + dy * Math.cos(rad);
     return { x: rx + cx, y: ry + cy };
-  };
+  }
 
-  const getSixPlayerCoordinates = (token: Token): { x: number; y: number } => {
+  function getSixPlayerCoordinates(token: Token): { x: number; y: number } {
     const { color, position, id } = token;
     const list: PlayerColor[] = ['red', 'green', 'yellow', 'blue', 'orange', 'purple'];
     const colorIdx = list.indexOf(color);
@@ -99,11 +178,11 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
     const cell = baseCells[cellIdx];
 
     return rotatePoint(cell.x, cell.y, cx, cy, armIdx * 60);
-  };
+  }
 
-  const getCoordinates = (token: Token) => {
+  function getCoordinates(token: Token) {
     return isSixPlayer ? getSixPlayerCoordinates(token) : getTokenCoordinates(token);
-  };
+  }
 
   // Group tokens by coordinates to handle stacking/offsets
   const getStackedTokenOffsets = () => {
@@ -254,7 +333,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
 
 
   return (
-    <div className="board-container">
+    <div className={`board-container ${shakeBoard ? 'animate-camera-shake' : ''}`}>
       <style>{`
         .board-container {
           width: 100%;
@@ -288,10 +367,10 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
         .ludo-board-svg {
           width: 100%;
           height: 100%;
-          background: rgba(11, 15, 25, 0.65);
-          border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 20px;
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+          background: #ffffff;
+          border: 6px solid #d97706;
+          border-radius: 24px;
+          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), inset 0 0 10px rgba(0, 0, 0, 0.15);
         }
 
         @keyframes pulse-highlight {
@@ -607,15 +686,16 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
           const canMove = hasRolled && activeColor === color && isValidMove(token, diceValue, activeColor, isSixPlayer);
           const tokenKey = `${color}_${id}`;
           
+          const isHopping = hoppingTokens[tokenKey];
           return (
             <g
               key={tokenKey}
               transform={`translate(${cx}, ${cy})`}
-              className={`token-element ${canMove ? 'token-element-active' : ''}`}
+              className={`token-element ${canMove ? 'token-element-active animate-bounce-movable' : 'animate-float-pawn'}`}
               onClick={() => canMove && onTokenClick(id)}
               onMouseEnter={() => canMove && setHoveredTokenId(tokenKey)}
               onMouseLeave={() => setHoveredTokenId(null)}
-              style={{ color: colorMap[color] }}
+              style={{ color: colorMap[color], transformOrigin: 'center bottom' }}
             >
               {/* Invisible large touch target overlay for mobile ease of use */}
               {canMove && (
@@ -627,65 +707,79 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
                   style={{ cursor: 'pointer' }}
                 />
               )}
-              {/* SVG Vector Shadow for 100% performant graphics rendering */}
-              <path
-                d="M -0.2,0.3 C -0.2,0.14 -0.08,0.04 -0.04,-0.04 C -0.08,-0.08 -0.08,-0.16 0.04,-0.2 C 0.16,-0.16 0.16,-0.08 0.12,-0.04 C 0.16,0.04 0.28,0.14 0.28,0.3 Z"
-                fill="rgba(0,0,0,0.3)"
-                style={{ pointerEvents: 'none' }}
-              />
-              <circle
-                cx={0.04}
-                cy={-0.2}
-                r={0.15}
-                fill="rgba(0,0,0,0.3)"
-                style={{ pointerEvents: 'none' }}
-              />
               
-              {/* Pawn Base */}
-              <path
-                d="M -0.24,0.26 C -0.24,0.1 -0.12,0 -0.08,-0.08 C -0.12,-0.12 -0.12,-0.2 0,-0.24 C 0.12,-0.2 0.12,-0.12 0.08,-0.08 C 0.12,0 0.24,0.1 0.24,0.26 Z"
-                fill={colorMap[color]}
-                stroke="#ffffff"
-                strokeWidth={0.045}
-                strokeLinejoin="round"
-                className={canMove ? 'token-circle-active' : ''}
-              />
-              
-              {/* Pawn Head */}
-              <circle
-                cx={0}
-                cy={-0.24}
-                r={0.15}
-                fill={colorMap[color]}
-                stroke="#ffffff"
-                strokeWidth={0.04}
-              />
-              
-              {/* Glossy shine overlay */}
-              <circle
-                cx={-0.05}
-                cy={-0.28}
-                r={0.05}
-                fill="#ffffff"
-                opacity={0.65}
-                style={{ pointerEvents: 'none' }}
-              />
+              {/* Inner animated offset container for hop/bounce physics */}
+              <g className={isHopping ? 'animate-hop-step' : ''} style={{ transformOrigin: 'center bottom' }}>
+                {/* SVG Vector Shadow for 100% performant graphics rendering */}
+                <path
+                  d="M -0.2,0.3 C -0.2,0.14 -0.08,0.04 -0.04,-0.04 C -0.08,-0.08 -0.08,-0.16 0.04,-0.2 C 0.16,-0.16 0.16,-0.08 0.12,-0.04 C 0.16,0.04 0.28,0.14 0.28,0.3 Z"
+                  fill="rgba(0,0,0,0.3)"
+                  style={{ pointerEvents: 'none' }}
+                />
+                <circle
+                  cx={0.04}
+                  cy={-0.2}
+                  r={0.15}
+                  fill="rgba(0,0,0,0.3)"
+                  style={{ pointerEvents: 'none' }}
+                />
+                
+                {/* Pawn Base */}
+                <path
+                  d="M -0.24,0.26 C -0.24,0.1 -0.12,0 -0.08,-0.08 C -0.12,-0.12 -0.12,-0.2 0,-0.24 C 0.12,-0.2 0.12,-0.12 0.08,-0.08 C 0.12,0 0.24,0.1 0.24,0.26 Z"
+                  fill={colorMap[color]}
+                  stroke="#ffffff"
+                  strokeWidth={0.045}
+                  strokeLinejoin="round"
+                  className={canMove ? 'token-circle-active' : ''}
+                />
+                
+                {/* Pawn Head */}
+                <circle
+                  cx={0}
+                  cy={-0.24}
+                  r={0.15}
+                  fill={colorMap[color]}
+                  stroke="#ffffff"
+                  strokeWidth={0.04}
+                />
+                
+                {/* Glossy shine overlay */}
+                <circle
+                  cx={-0.05}
+                  cy={-0.28}
+                  r={0.05}
+                  fill="#ffffff"
+                  opacity={0.65}
+                  style={{ pointerEvents: 'none' }}
+                />
 
-              {/* Unique Number tag */}
-              <text
-                x={0}
-                y={0.14}
-                fill="#ffffff"
-                fontSize={0.22}
-                fontWeight={900}
-                textAnchor="middle"
-                style={{ pointerEvents: 'none', userSelect: 'none' }}
-              >
-                {id + 1}
-              </text>
+                {/* Unique Number tag */}
+                <text
+                  x={0}
+                  y={0.14}
+                  fill="#ffffff"
+                  fontSize={0.22}
+                  fontWeight={900}
+                  textAnchor="middle"
+                  style={{ pointerEvents: 'none', userSelect: 'none' }}
+                >
+                  {id + 1}
+                </text>
+              </g>
             </g>
           );
         })}
+
+        {/* SVG Particle Burst Emitters */}
+        {svgParticles.map((p) => (
+          <path
+            key={p.id}
+            d={`M ${p.cx},${p.cy - 0.08} L ${p.cx + 0.08},${p.cy} L ${p.cx},${p.cy + 0.08} L ${p.cx - 0.08},${p.cy} Z`}
+            fill={p.color}
+            style={{ pointerEvents: 'none' }}
+          />
+        ))}
       </svg>
     </div>
   );

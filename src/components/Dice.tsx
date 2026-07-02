@@ -8,9 +8,17 @@ interface DiceProps {
   onClick: () => void;
   disabled: boolean;
   playerColor: PlayerColor | null;
+  selectedDiceSkin?: string;
 }
 
-export const Dice: React.FC<DiceProps> = ({ value, isRolling, onClick, disabled, playerColor }) => {
+export const Dice: React.FC<DiceProps> = ({ 
+  value, 
+  isRolling, 
+  onClick, 
+  disabled, 
+  playerColor,
+  selectedDiceSkin = 'classic'
+}) => {
   const [rotationClass, setRotationClass] = useState('');
 
   // Map dice value to rotation angles to bring that face to the front
@@ -96,7 +104,7 @@ export const Dice: React.FC<DiceProps> = ({ value, isRolling, onClick, disabled,
           position: absolute;
           width: 60px;
           height: 60px;
-          background: rgba(20, 26, 42, 0.85);
+          background: var(--dice-bg-color, rgba(20, 26, 42, 0.85));
           backdrop-filter: blur(8px);
           border: 2px solid var(--dice-border-color, var(--neutral-500));
           border-radius: 12px;
@@ -137,15 +145,40 @@ export const Dice: React.FC<DiceProps> = ({ value, isRolling, onClick, disabled,
         .dot-br { grid-area: 3 / 3; }
       `}</style>
 
-      <div 
-        className={`dice-scene ${disabled ? 'disabled' : ''}`} 
-        onClick={() => !disabled && !isRolling && onClick()}
-        style={{
-          ['--dice-border-color' as any]: activeColor,
-          ['--dice-glow-color' as any]: playerColor ? `var(--ludo-${playerColor}-glow)` : 'rgba(255,255,255,0.05)',
-          ['--dice-dot-color' as any]: activeColor
-        }}
-      >
+      {(() => {
+        let diceBg = 'rgba(20, 26, 42, 0.85)';
+        let diceBorder = activeColor;
+        let diceDotColor = activeColor;
+        let diceGlow = playerColor ? `var(--ludo-${playerColor}-glow)` : 'rgba(255,255,255,0.05)';
+
+        if (selectedDiceSkin === 'gold') {
+          diceBg = 'linear-gradient(135deg, #f59e0b 0%, #78350f 100%)';
+          diceBorder = '#fbbf24';
+          diceDotColor = '#ffffff';
+          diceGlow = 'rgba(245, 158, 11, 0.5)';
+        } else if (selectedDiceSkin === 'neon') {
+          diceBg = 'linear-gradient(135deg, #0f172a 0%, #020617 100%)';
+          diceBorder = '#06b6d4';
+          diceDotColor = '#06b6d4';
+          diceGlow = 'rgba(6, 182, 212, 0.6)';
+        } else if (selectedDiceSkin === 'rainbow') {
+          diceBg = 'linear-gradient(135deg, #ec4899 0%, #3b82f6 50%, #10b981 100%)';
+          diceBorder = '#ffffff';
+          diceDotColor = '#ffffff';
+          diceGlow = 'rgba(236, 72, 153, 0.5)';
+        }
+
+        return (
+          <div 
+            className={`dice-scene ${disabled ? 'disabled' : ''}`} 
+            onClick={() => !disabled && !isRolling && onClick()}
+            style={{
+              ['--dice-bg-color' as any]: diceBg,
+              ['--dice-border-color' as any]: diceBorder,
+              ['--dice-glow-color' as any]: diceGlow,
+              ['--dice-dot-color' as any]: diceDotColor
+            }}
+          >
         <div 
           className={`dice-cube ${rotationClass}`}
           style={{ transform: isRolling ? undefined : getRotationStyle(value) }}
@@ -191,6 +224,8 @@ export const Dice: React.FC<DiceProps> = ({ value, isRolling, onClick, disabled,
           </div>
         </div>
       </div>
+    );
+  })()}
     </div>
   );
 };

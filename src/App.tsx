@@ -3,6 +3,8 @@ import type { GameState, Player, Token, ChatMsg, PlayerColor, NetworkMessage } f
 import Lobby from './components/Lobby';
 import LudoBoard from './components/LudoBoard';
 import Dice from './components/Dice';
+import AnimatedBackground from './components/AnimatedBackground';
+import GameModals from './components/GameModals';
 import peerService from './services/peerService';
 import { audio } from './utils/audio';
 import { getAvatarById } from './utils/avatarHelper';
@@ -13,7 +15,7 @@ import {
   hasValidMoves,
   hasPlayerWon
 } from './utils/ludoLogic';
-import { Volume2, VolumeX, LogOut, RotateCcw, Mic, MicOff, Pause, Play, MessageSquare, X } from 'lucide-react';
+import { Volume2, VolumeX, LogOut, RotateCcw, Mic, MicOff, Pause, Play, MessageSquare, X, Trophy, ShoppingBag, Award, Settings } from 'lucide-react';
 
 
 const INITIAL_TOKENS = (): Token[] => {
@@ -38,6 +40,36 @@ export const App: React.FC = () => {
   const [voiceActive, setVoiceActive] = useState(false);
   const [micMuted, setMicMuted] = useState(false);
   const [floatingEmojis, setFloatingEmojis] = useState<{ id: string; color: PlayerColor; emoji: string }[]>([]);
+
+  const [activeModalTab, setActiveModalTab] = useState<'store' | 'achievements' | 'settings' | 'leaderboard' | null>(null);
+  const [myCoins, setMyCoins] = useState(() => {
+    const saved = localStorage.getItem('ludo_player_coins');
+    return saved ? parseInt(saved, 10) : 2820;
+  });
+  const [selectedDiceSkin, setSelectedDiceSkin] = useState(() => {
+    return localStorage.getItem('ludo_dice_skin') || 'classic';
+  });
+  const [accessibilityMode, setAccessibilityMode] = useState(() => {
+    return localStorage.getItem('ludo_accessibility_mode') || 'standard';
+  });
+
+  const handleUpdateCoins = (amount: number) => {
+    setMyCoins((prev) => {
+      const next = prev + amount;
+      localStorage.setItem('ludo_player_coins', next.toString());
+      return next;
+    });
+  };
+
+  const handleSelectDiceSkin = (skin: string) => {
+    setSelectedDiceSkin(skin);
+    localStorage.setItem('ludo_dice_skin', skin);
+  };
+
+  const handleSetAccessibilityMode = (mode: string) => {
+    setAccessibilityMode(mode);
+    localStorage.setItem('ludo_accessibility_mode', mode);
+  };
 
   const [chatBubbles, setChatBubbles] = useState<Record<string, string>>({});
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -1145,8 +1177,181 @@ export const App: React.FC = () => {
   const myPlayerId = peerService.getPlayerId();
   const isMyTurn = activePlayer && activePlayer.id === myPlayerId;
 
+  const renderHUDCapsule = (color: PlayerColor) => {
+    const p = gameState.players.find((player) => player.color === color);
+    const colorMap: Record<string, string> = {
+      red: 'var(--ludo-red)',
+      green: 'var(--ludo-green)',
+      yellow: 'var(--ludo-yellow)',
+      blue: 'var(--ludo-blue)'
+    };
+    
+    if (!p) {
+      return (
+        <div style={{
+          width: '120px',
+          height: '46px',
+          borderRadius: '12px',
+          border: '1.5px dashed rgba(255,255,255,0.1)',
+          background: 'rgba(255,255,255,0.01)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'rgba(255,255,255,0.2)',
+          fontSize: '0.65rem',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
+        }}>
+          Empty Slot
+        </div>
+      );
+    }
+
+    const isActive = gameState.players[gameState.activePlayerIndex]?.color === color;
+    const isTurnTimerActive = isActive && gameState.turnTimer !== null;
+    const av = getAvatarById(p.avatarUrl);
+
+    const flags = ['🇺🇸', '🇬🇧', '🇮🇳', '🇨🇦', '🇩🇪', '🇯🇵', '🇧🇷', '🇦🇺'];
+    const flagIdx = p.id.charCodeAt(0) % flags.length;
+    const flag = flags[flagIdx] || '🌐';
+
+    return (
+      <div 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '4px 8px',
+          width: '135px',
+          height: '48px',
+          borderRadius: '14px',
+          background: isActive ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+          border: `2px solid ${isActive ? colorMap[color] : 'rgba(255,255,255,0.08)'}`,
+          boxShadow: isActive ? `0 0 12px var(--ludo-${color}-glow)` : 'none',
+          boxSizing: 'border-box',
+          position: 'relative',
+          transition: 'all 0.25s ease'
+        }}
+      >
+        <div style={{ position: 'relative', width: 34, height: 34, borderRadius: '50%', background: av.bg, border: '1.5px solid #ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.15rem', flexShrink: 0 }}>
+          {isTurnTimerActive && (
+            <svg
+              style={{
+                position: 'absolute',
+                top: -3,
+                left: -3,
+                width: 38,
+                height: 38,
+                transform: 'rotate(-90deg)',
+              }}
+            >
+              <circle
+                cx={19}
+                cy={19}
+                r={17}
+                fill="transparent"
+                stroke="rgba(255,255,255,0.15)"
+                strokeWidth={1.5}
+              />
+              <circle
+                cx={19}
+                cy={19}
+                r={17}
+                fill="transparent"
+                stroke={colorMap[color]}
+                strokeWidth={2.5}
+                strokeDasharray={2 * Math.PI * 17}
+                strokeDashoffset={2 * Math.PI * 17 * (1 - (gameState.turnTimer || 0) / 30)}
+                style={{ transition: 'stroke-dashoffset 1s linear' }}
+              />
+            </svg>
+          )}
+          {av.emoji}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 900, color: '#ffffff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <span>{p.name}</span>
+            <span style={{ fontSize: '0.65rem' }}>{flag}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 1 }}>
+            <span style={{ fontSize: '0.62rem', color: '#fbbf24', fontWeight: 700 }}>🪙 {p.id === myPlayerId ? myCoins : (p.coins || 2820)}</span>
+            {p.isBot && (
+              <span style={{ background: 'rgba(255,255,255,0.15)', color: '#ffffff', fontSize: '0.52rem', fontWeight: 900, padding: '0.5px 3px', borderRadius: 3 }}>BOT</span>
+            )}
+          </div>
+        </div>
+
+        {isActive && (
+          <span style={{
+            position: 'absolute',
+            bottom: -5,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: colorMap[color],
+            boxShadow: `0 0 6px ${colorMap[color]}`
+          }} />
+        )}
+        {chatBubbles[p.color] && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '110%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              background: '#1e293b',
+              border: '1px solid rgba(255,255,255,0.12)',
+              padding: '6px 12px',
+              borderRadius: '12px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
+              zIndex: 100,
+              color: 'white',
+              animation: 'bounce 0.5s ease'
+            }}
+          >
+            {chatBubbles[p.color]}
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: 0,
+                height: 0,
+                borderLeft: '6px solid transparent',
+                borderRight: '6px solid transparent',
+                borderTop: '6px solid #1e293b'
+              }}
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="app-container">
+      {/* Animated Drifting Sparks Background */}
+      <AnimatedBackground />
+
+      {/* Premium Custom Store & Settings Modal Overlays */}
+      <GameModals
+        activeTab={activeModalTab}
+        onClose={() => setActiveModalTab(null)}
+        coins={myCoins}
+        onUpdateCoins={handleUpdateCoins}
+        selectedDiceSkin={selectedDiceSkin}
+        onSelectDiceSkin={handleSelectDiceSkin}
+        accessibilityMode={accessibilityMode}
+        onSetAccessibilityMode={handleSetAccessibilityMode}
+      />
       <style>{`
         .app-container {
           height: 100vh;
@@ -1744,11 +1949,84 @@ export const App: React.FC = () => {
       })()}
 
       {/* Top Header */}
-      <header className="header">
-        <h1 className="logo">LUDO P2P</h1>
-        <div className="header-controls">
+      <header className="header" style={{
+        background: 'linear-gradient(to bottom, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95))',
+        borderBottom: '3.5px solid #f59e0b',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.4)',
+        padding: '8px 16px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        height: '60px',
+        zIndex: 50
+      }}>
+        {/* Left Side Profile Badge */}
+        <div 
+          onClick={() => setActiveModalTab('settings')}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', background: 'rgba(255,255,255,0.04)', padding: '4px 10px', borderRadius: '15px', border: '1.5px solid rgba(255,255,255,0.06)' }}
+        >
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #fbbf24, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', fontWeight: 900 }}>
+            👑
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#f8fafc', lineHeight: 1.1 }}>Player</span>
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 3 }}>
+              🪙 {myCoins}
+            </span>
+          </div>
+        </div>
+
+        {/* Center Title Logo */}
+        <h1 className="logo font-fredoka" style={{
+          fontSize: '1.55rem',
+          fontWeight: 900,
+          background: 'linear-gradient(to bottom, #ffffff 30%, #fbbf24 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+          letterSpacing: '0.05em',
+          margin: 0
+        }}>
+          LUDO KING
+        </h1>
+
+        {/* Right Action Icons Row */}
+        <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button 
+            className="icon-btn" 
+            onClick={() => setActiveModalTab('leaderboard')} 
+            title="Leaderboard"
+            style={{ width: 34, height: 34, borderRadius: '8px' }}
+          >
+            <Trophy size={16} className="text-yellow-400" />
+          </button>
+          <button 
+            className="icon-btn" 
+            onClick={() => setActiveModalTab('store')} 
+            title="Cosmetics Store"
+            style={{ width: 34, height: 34, borderRadius: '8px' }}
+          >
+            <ShoppingBag size={16} className="text-amber-400" />
+          </button>
+          <button 
+            className="icon-btn" 
+            onClick={() => setActiveModalTab('achievements')} 
+            title="Achievements"
+            style={{ width: 34, height: 34, borderRadius: '8px' }}
+          >
+            <Award size={16} className="text-emerald-400" />
+          </button>
+          <button 
+            className="icon-btn" 
+            onClick={() => setActiveModalTab('settings')} 
+            title="Settings"
+            style={{ width: 34, height: 34, borderRadius: '8px' }}
+          >
+            <Settings size={16} className="text-slate-300" />
+          </button>
+
           {inGame && roomId !== 'OFFLINE' && (
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <button
                 className={`icon-btn ${voiceActive ? 'voice-active-pill animate-pulse' : ''}`}
                 onClick={voiceActive ? stopVoiceChat : startVoiceChat}
@@ -1756,19 +2034,18 @@ export const App: React.FC = () => {
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 6,
-                  background: voiceActive ? 'rgba(34, 197, 94, 0.1)' : 'transparent',
+                  background: voiceActive ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
                   borderColor: voiceActive ? 'var(--ludo-green)' : 'var(--border-light)',
-                  borderRadius: '20px',
-                  padding: '4px 10px',
-                  fontSize: '0.8rem',
+                  borderRadius: '12px',
+                  height: 34,
+                  padding: '0 8px',
+                  fontSize: '0.75rem',
                   color: voiceActive ? '#4ade80' : 'inherit'
                 }}
               >
-                {voiceActive ? <Mic size={16} /> : <MicOff size={16} />}
-                <span>{voiceActive ? "Voice On" : "Voice Off"}</span>
+                {voiceActive ? <Mic size={14} /> : <MicOff size={14} />}
               </button>
-              
+
               {voiceActive && (
                 <button
                   className="icon-btn"
@@ -1777,27 +2054,37 @@ export const App: React.FC = () => {
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 6,
                     background: micMuted ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
                     borderColor: micMuted ? 'rgba(239, 68, 68, 0.3)' : 'rgba(34, 197, 94, 0.3)',
-                    borderRadius: '20px',
-                    padding: '4px 10px',
-                    fontSize: '0.8rem',
+                    borderRadius: '12px',
+                    height: 34,
+                    width: 34,
                     color: micMuted ? '#f87171' : '#4ade80'
                   }}
                 >
-                  {micMuted ? <MicOff size={16} /> : <Mic size={16} />}
-                  <span>{micMuted ? "Muted" : "Mute"}</span>
+                  {micMuted ? <MicOff size={14} /> : <Mic size={14} />}
                 </button>
               )}
             </div>
           )}
-          <button className="icon-btn" onClick={toggleSound} title="Toggle Sound FX">
-            {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+
+          <button 
+            className="icon-btn" 
+            onClick={toggleSound} 
+            title="Toggle Sound FX"
+            style={{ width: 34, height: 34, borderRadius: '8px' }}
+          >
+            {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
+
           {inGame && (
-            <button className="icon-btn text-red-400" onClick={leaveGame} title="Leave Game">
-              <LogOut size={20} />
+            <button 
+              className="icon-btn text-red-400" 
+              onClick={leaveGame} 
+              title="Leave Game"
+              style={{ width: 34, height: 34, borderRadius: '8px', borderColor: 'rgba(239,68,68,0.2)' }}
+            >
+              <LogOut size={16} />
             </button>
           )}
         </div>
@@ -1822,9 +2109,16 @@ export const App: React.FC = () => {
       ) : (
         <main className="main-game">
           {/* Centered Board & Controls */}
-          <div className="game-column">
-            <div className="board-section">
-            <div style={{ position: 'relative' }}>
+          <div className="game-column" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', maxWidth: '520px', width: '100%' }}>
+            
+            {/* Top Row Players HUD (Green & Yellow) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '0 4px', gap: '8px' }}>
+              {renderHUDCapsule('green')}
+              {renderHUDCapsule('yellow')}
+            </div>
+
+            {/* Board Section */}
+            <div className="board-section" style={{ position: 'relative', width: '100%' }}>
               <LudoBoard
                 tokens={gameState.tokens.filter((t) => gameState.players.some((p) => p.color === t.color))}
                 activeColor={activePlayer?.color || null}
@@ -1833,6 +2127,8 @@ export const App: React.FC = () => {
                 onTokenClick={triggerMoveIntent}
                 playersCount={gameState.players.length}
               />
+              
+              {/* Floating Emojis */}
               {floatingEmojis.map((item) => {
                 const list: PlayerColor[] = ['red', 'green', 'yellow', 'blue', 'orange', 'purple'];
                 const colorIdx = list.indexOf(item.color);
@@ -1875,6 +2171,8 @@ export const App: React.FC = () => {
                   </span>
                 );
               })}
+
+              {/* Pause overlay */}
               {gameState.isPaused && (
                 <div
                   style={{
@@ -1894,195 +2192,91 @@ export const App: React.FC = () => {
                     borderRadius: '12px'
                   }}
                 >
-                  <div style={{ fontSize: '2rem', fontWeight: 900, color: 'white', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Pause size={28} className="text-red-500 animate-pulse" />
+                  <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'white', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Pause size={24} className="text-red-500 animate-pulse" />
                     <span>GAME PAUSED</span>
                   </div>
-                  <p style={{ color: 'var(--neutral-400)', fontSize: '0.9rem', margin: 0 }}>
+                  <p style={{ color: 'var(--neutral-400)', fontSize: '0.85rem', margin: 0 }}>
                     The host has paused the game.
                   </p>
                   {isHost && (
-                    <button className="glass-button glow-green" style={{ padding: '8px 16px', fontSize: '0.85rem' }} onClick={togglePause}>
-                      <Play size={14} /> Resume Game
+                    <button className="game-btn-premium game-btn-green" style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: '15px' }} onClick={togglePause}>
+                      <Play size={12} /> Resume
                     </button>
                   )}
                 </div>
               )}
             </div>
 
+            {/* Bottom Row Players HUD (Red & Blue) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '0 4px', gap: '8px' }}>
+              {renderHUDCapsule('red')}
+              {renderHUDCapsule('blue')}
             </div>
 
-          <div className="game-controls-panel glass-panel">
-            <div className="player-hud-grid">
-              {gameState.players.map((p, idx) => {
-                const isActive = idx === gameState.activePlayerIndex;
-                const isMe = p.id === myPlayerId;
-                const isTurnTimerActive = isActive && gameState.turnTimer !== null;
-
-                return (
-                  <div
-                    key={p.id}
-                    className={`player-hud-card ${isActive ? 'active' : ''} ${p.isConnected ? 'online' : 'offline'}`}
-                    style={{
-                      position: 'relative',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '8px 12px',
-                      background: isActive ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.03)',
-                      borderRadius: '12px',
-                      border: `1px solid ${isActive ? `var(--ludo-${p.color})` : 'rgba(255,255,255,0.08)'}`,
-                      boxShadow: isActive ? `0 0 10px var(--ludo-${p.color}-glow)` : 'none',
-                      transition: 'all 0.3s ease',
-                      width: '100%',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <div style={{ position: 'relative', width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {isTurnTimerActive && (
-                        <svg
-                          style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: 38,
-                            height: 38,
-                            transform: 'rotate(-90deg)',
-                            zIndex: 1
-                          }}
-                          viewBox="0 0 36 36"
-                        >
-                          <circle cx="18" cy="18" r="16" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
-                          <circle
-                            cx="18"
-                            cy="18"
-                            r="16"
-                            fill="none"
-                            stroke={`var(--ludo-${p.color})`}
-                            strokeWidth="2.8"
-                            strokeDasharray={`${(gameState.turnTimer! / 30) * 100}, 100`}
-                            strokeLinecap="round"
-                            style={{ transition: 'stroke-dasharray 0.2s linear' }}
-                          />
-                        </svg>
-                      )}
-                      <div
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: '50%',
-                          background: getAvatarById(p.avatarUrl).bg,
-                          border: isActive ? '2px solid #22c55e' : `2px solid var(--ludo-${p.color})`,
-                          boxShadow: isActive ? '0 0 8px rgba(34, 197, 94, 0.6)' : 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '1.15rem',
-                          color: 'white',
-                          zIndex: 2,
-                          transform: isActive ? 'scale(1.08)' : 'scale(1)',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        {getAvatarById(p.avatarUrl).emoji}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', flex: 1, overflow: 'hidden' }}>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'left' }}>
-                        {p.name} {isMe && '(You)'}
-                      </span>
-                      <span style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span>🪙 {p.coins || 100}</span>
-                        <span style={{ opacity: 0.5 }}>•</span>
-                        <span style={{ color: 'var(--neutral-400)' }}>Lvl {p.level || 1}</span>
-                        {p.isBot && <span style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: 4, fontSize: '0.6rem' }}>BOT</span>}
-                      </span>
-                    </div>
-
-                    {chatBubbles[p.color] && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          bottom: '110%',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          background: '#1e293b',
-                          border: '1px solid rgba(255,255,255,0.12)',
-                          padding: '6px 12px',
-                          borderRadius: '12px',
-                          fontSize: '0.85rem',
-                          fontWeight: 700,
-                          whiteSpace: 'nowrap',
-                          boxShadow: '0 4px 15px rgba(0,0,0,0.5)',
-                          zIndex: 100,
-                          color: 'white',
-                          animation: 'bounce 0.5s ease'
-                        }}
-                      >
-                        {chatBubbles[p.color]}
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: 0,
-                            height: 0,
-                            borderLeft: '6px solid transparent',
-                            borderRight: '6px solid transparent',
-                            borderTop: '6px solid #1e293b'
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="dice-outer" style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
-              <Dice
-                value={gameState.diceValue}
-                isRolling={gameState.diceState === 'rolling'}
-                onClick={triggerRollIntent}
-                disabled={!isMyTurn || gameState.hasRolled}
-                playerColor={activePlayer?.color || null}
-              />
-
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: '0.65rem', color: 'var(--neutral-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Current Turn
-                </span>
-                <div style={{ fontSize: '1.05rem', fontWeight: 900, color: activePlayer ? `var(--ludo-${activePlayer.color})` : 'white', display: 'flex', alignItems: 'center', gap: 6, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {activePlayer?.name} {isMyTurn ? '(You)' : ''}
+            {/* Central Controls Panel (Glassmorphic Box for Active Roll) */}
+            <div className="game-controls-panel glass-panel" style={{ width: '100%', display: 'flex', flexDirection: 'column', padding: '8px 12px', gap: '8px', border: '1.5px solid rgba(255,255,255,0.06)', borderRadius: '16px', boxSizing: 'border-box' }}>
+              <div className="dice-outer" style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+                <div style={{ position: 'relative' }}>
+                  {/* Glowing neon active ring behind active dice */}
+                  {isMyTurn && !gameState.hasRolled && (
+                    <div style={{
+                      position: 'absolute',
+                      top: -6,
+                      left: -6,
+                      right: -6,
+                      bottom: -6,
+                      borderRadius: '50%',
+                      border: '3px solid #fbbf24',
+                      boxShadow: '0 0 15px #f59e0b',
+                      animation: 'pulseGlow 1.4s infinite ease-in-out',
+                      pointerEvents: 'none',
+                      zIndex: 0
+                    }} />
+                  )}
+                  <Dice
+                    value={gameState.diceValue}
+                    isRolling={gameState.diceState === 'rolling'}
+                    onClick={triggerRollIntent}
+                    disabled={!isMyTurn || gameState.hasRolled}
+                    playerColor={activePlayer?.color || null}
+                    selectedDiceSkin={selectedDiceSkin}
+                  />
                 </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 2, flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--neutral-400)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Current Turn
+                  </span>
+                  <div style={{ fontSize: '1rem', fontWeight: 900, color: activePlayer ? `var(--ludo-${activePlayer.color})` : 'white', display: 'flex', alignItems: 'center', gap: 6, width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {activePlayer?.name} {isMyTurn ? '(You)' : ''}
+                  </div>
+                </div>
+
+                {/* Chat Popover Toggle Button */}
+                <button
+                  onClick={() => setIsChatOpen(!isChatOpen)}
+                  className={`icon-btn ${isChatOpen ? 'glow-blue' : ''}`}
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    flexShrink: 0
+                  }}
+                  title="Send Chat / Emoji"
+                >
+                  <MessageSquare size={18} />
+                </button>
               </div>
 
-              {/* Chat Popover Toggle Button */}
-              <button
-                onClick={() => setIsChatOpen(!isChatOpen)}
-                className={`icon-btn ${isChatOpen ? 'glow-blue' : ''}`}
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  flexShrink: 0
-                }}
-                title="Send Chat / Emoji"
-              >
-                <MessageSquare size={18} />
-              </button>
-            </div>
-
-            {/* Turn Status Message on the next line */}
-            <div style={{ fontSize: '0.8rem', color: 'var(--neutral-300)', width: '100%', textAlign: 'center', marginTop: 4, minHeight: '18px', lineHeight: '1.2' }}>
-              {gameState.statusMessage || 'Welcome! Roll to begin.'}
-            </div>
+              {/* Turn Status Message on the next line */}
+              <div style={{ fontSize: '0.78rem', color: 'var(--neutral-300)', width: '100%', textAlign: 'center', minHeight: '18px', lineHeight: '1.2' }}>
+                {gameState.statusMessage || 'Welcome! Roll to begin.'}
+              </div>
 
               {isHost && (
                 <div style={{ display: 'flex', gap: 12, width: '100%' }}>

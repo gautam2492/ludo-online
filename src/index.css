@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;650;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Nunito', 'Outfit', sans-serif;
   line-height: 1.5;
-  font-weight: 400;
+  font-weight: 650;
 
   color-scheme: dark;
   color: #f8fafc;
@@ -249,4 +249,160 @@ body {
 .tooltip:hover .tooltiptext {
   visibility: visible;
   opacity: 1;
+}
+
+/* Fredoka headings font override */
+.font-fredoka {
+  font-family: 'Fredoka', sans-serif;
+}
+
+/* Drifting Floating Animation for background sparkles/elements */
+@keyframes backgroundFloat {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.15;
+  }
+  50% {
+    transform: translateY(-25px) rotate(180deg);
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(0px) rotate(360deg);
+    opacity: 0.15;
+  }
+}
+
+.animate-floating {
+  animation: backgroundFloat 15s ease-in-out infinite;
+}
+
+/* Pawn Idle Breathing animation */
+@keyframes floatPawn {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float-pawn {
+  animation: floatPawn 2.2s ease-in-out infinite;
+}
+
+/* Movable Pawn scaling jump-bounce loop */
+@keyframes bounceMovable {
+  0% { transform: translateY(0px) scale(1.08); }
+  35% { transform: translateY(-7px) scale(1.08); }
+  70% { transform: translateY(0px) scale(1.08); }
+  100% { transform: translateY(0px) scale(1.08); }
+}
+
+.animate-bounce-movable {
+  animation: bounceMovable 1s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+}
+
+/* Parabolic walk step translations (handled dynamically but keyframe fallback for smooth hopping) */
+@keyframes hopParabolic {
+  0% { transform: translateY(0) scale(1.08); }
+  50% { transform: translateY(-16px) scale(1.2); }
+  100% { transform: translateY(0) scale(1.08); }
+}
+
+.animate-hop-step {
+  animation: hopParabolic 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Camera/Screen shake animation triggered on token capture */
+@keyframes shakeScreen {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: translate(-2px, 1px) rotate(-0.5deg); }
+  20%, 40%, 60%, 80% { transform: translate(2px, -1px) rotate(0.5deg); }
+}
+
+.animate-camera-shake {
+  animation: shakeScreen 0.45s ease-in-out forwards;
+}
+
+/* Neon Pulse glow for active dice/turn cards */
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(246, 187, 9, 0.2); border-color: rgba(246, 187, 9, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(246, 187, 9, 0.6); border-color: rgba(246, 187, 9, 0.8); }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 1.8s ease-in-out infinite;
+}
+
+/* Neon glow helper classes */
+.glow-red {
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.35);
+  border-color: var(--ludo-red) !important;
+}
+.glow-green {
+  box-shadow: 0 0 15px rgba(34, 197, 94, 0.35);
+  border-color: var(--ludo-green) !important;
+}
+.glow-yellow {
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.35);
+  border-color: var(--ludo-yellow) !important;
+}
+.glow-blue {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.35);
+  border-color: var(--ludo-blue) !important;
+}
+
+/* Custom premium gaming buttons styling */
+.game-btn-premium {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(to bottom, #f59e0b, #d97706);
+  border: 2px solid #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-weight: 900;
+  font-family: 'Fredoka', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.game-btn-premium:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 14px rgba(217, 119, 6, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+.game-btn-premium:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.2);
+}
+
+.game-btn-blue {
+  background: linear-gradient(to bottom, #3b82f6, #1d4ed8);
+  box-shadow: 0 4px 10px rgba(29, 78, 216, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+}
+.game-btn-blue:hover:not(:disabled) {
+  box-shadow: 0 6px 14px rgba(29, 78, 216, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+.game-btn-green {
+  background: linear-gradient(to bottom, #10b981, #047857);
+  box-shadow: 0 4px 10px rgba(4, 120, 87, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+}
+.game-btn-green:hover:not(:disabled) {
+  box-shadow: 0 6px 14px rgba(4, 120, 87, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+.game-btn-red {
+  background: linear-gradient(to bottom, #ef4444, #b91c1c);
+  box-shadow: 0 4px 10px rgba(185, 28, 28, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+}
+.game-btn-red:hover:not(:disabled) {
+  box-shadow: 0 6px 14px rgba(185, 28, 28, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+/* Glassmorphism panel refinements */
+.glass-panel {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
