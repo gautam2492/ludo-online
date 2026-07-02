@@ -173,26 +173,24 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
 
   // General track cells (52 cells)
   TRACK_COORDS.forEach(([x, y]) => {
-    let fill = 'rgba(20, 26, 42, 0.4)';
-    let border = 'rgba(255,255,255,0.08)';
+    let fill = '#ffffff';
+    let border = '#1e293b';
 
-    // Highlight start cells
-    if (x === 1 && y === 6) { fill = 'var(--ludo-red-dark)'; border = 'var(--ludo-red)'; }
-    else if (x === 8 && y === 1) { fill = 'var(--ludo-green-dark)'; border = 'var(--ludo-green)'; }
-    else if (x === 13 && y === 8) { fill = 'var(--ludo-yellow-dark)'; border = 'var(--ludo-yellow)'; }
-    else if (x === 6 && y === 13) { fill = 'var(--ludo-blue-dark)'; border = 'var(--ludo-blue)'; }
+    // Highlight start cells with solid bright colors
+    if (x === 1 && y === 6) { fill = 'var(--ludo-red)'; border = '#1e293b'; }
+    else if (x === 8 && y === 1) { fill = 'var(--ludo-green)'; border = '#1e293b'; }
+    else if (x === 13 && y === 8) { fill = 'var(--ludo-yellow)'; border = '#1e293b'; }
+    else if (x === 6 && y === 13) { fill = 'var(--ludo-blue)'; border = '#1e293b'; }
     
-    // Highlight home paths slightly
     cells.push(renderCell(x, y, fill, border));
   });
 
-  // Home Path cells (5 cells per color)
+  // Home Path cells (5 cells per color) filled with bright solid colors
   const colors: PlayerColor[] = ['red', 'green', 'yellow', 'blue'];
   colors.forEach((color) => {
-    const colorVar = `var(--ludo-${color})`;
     const path = HOME_PATH_COORDS[color];
     path.forEach(([x, y]) => {
-      cells.push(renderCell(x, y, `var(--ludo-${color}-dark)`, colorVar));
+      cells.push(renderCell(x, y, `var(--ludo-${color})`, '#1e293b'));
     });
   });
 
@@ -489,46 +487,46 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
 
             {/* Red Home Yard */}
             <g>
-              <rect x={0} y={0} width={6} height={6} fill="var(--ludo-red-dark)" opacity={0.35} stroke="var(--ludo-red)" strokeWidth={0.06} rx={0.3} />
+              <rect x={0} y={0} width={6} height={6} fill="var(--ludo-red)" stroke="var(--ludo-red)" strokeWidth={0.06} rx={0.3} />
               <rect x={0.75} y={0.75} width={4.5} height={4.5} fill="#ffffff" rx={0.3} stroke="rgba(0,0,0,0.1)" strokeWidth={0.03} />
               <circle cx={2} cy={2} r={0.4} fill="var(--ludo-red)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={3.5} cy={2} r={0.4} fill="var(--ludo-red)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={2} cy={3.5} r={0.4} fill="var(--ludo-red)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={3.5} cy={3.5} r={0.4} fill="var(--ludo-red)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
-              <text x={3} y={5.2} fill="var(--ludo-red)" fontSize={0.7} fontWeight={800} textAnchor="middle" opacity={0.8}>RED</text>
+              <text x={3} y={5.2} fill="#ffffff" fontSize={0.7} fontWeight={900} textAnchor="middle" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.4))' }}>RED</text>
             </g>
 
             {/* Green Home Yard */}
             <g>
-              <rect x={9} y={0} width={6} height={6} fill="var(--ludo-green-dark)" opacity={0.35} stroke="var(--ludo-green)" strokeWidth={0.06} rx={0.3} />
+              <rect x={9} y={0} width={6} height={6} fill="var(--ludo-green)" stroke="var(--ludo-green)" strokeWidth={0.06} rx={0.3} />
               <rect x={9.75} y={0.75} width={4.5} height={4.5} fill="#ffffff" rx={0.3} stroke="rgba(0,0,0,0.1)" strokeWidth={0.03} />
               <circle cx={11} cy={2} r={0.4} fill="var(--ludo-green)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={12.5} cy={2} r={0.4} fill="var(--ludo-green)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={11} cy={3.5} r={0.4} fill="var(--ludo-green)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={12.5} cy={3.5} r={0.4} fill="var(--ludo-green)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
-              <text x={12} y={5.2} fill="var(--ludo-green)" fontSize={0.7} fontWeight={800} textAnchor="middle" opacity={0.8}>GREEN</text>
+              <text x={12} y={5.2} fill="#ffffff" fontSize={0.7} fontWeight={900} textAnchor="middle" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.4))' }}>GREEN</text>
             </g>
 
             {/* Yellow Home Yard */}
             <g>
-              <rect x={9} y={9} width={6} height={6} fill="var(--ludo-yellow-dark)" opacity={0.35} stroke="var(--ludo-yellow)" strokeWidth={0.06} rx={0.3} />
+              <rect x={9} y={9} width={6} height={6} fill="var(--ludo-yellow)" stroke="var(--ludo-yellow)" strokeWidth={0.06} rx={0.3} />
               <rect x={9.75} y={9.75} width={4.5} height={4.5} fill="#ffffff" rx={0.3} stroke="rgba(0,0,0,0.1)" strokeWidth={0.03} />
               <circle cx={11} cy={11} r={0.4} fill="var(--ludo-yellow)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={12.5} cy={11} r={0.4} fill="var(--ludo-yellow)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={11} cy={12.5} r={0.4} fill="var(--ludo-yellow)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={12.5} cy={12.5} r={0.4} fill="var(--ludo-yellow)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
-              <text x={12} y={14.2} fill="var(--ludo-yellow)" fontSize={0.7} fontWeight={800} textAnchor="middle" opacity={0.8}>YELLOW</text>
+              <text x={12} y={14.2} fill="#ffffff" fontSize={0.7} fontWeight={900} textAnchor="middle" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.4))' }}>YELLOW</text>
             </g>
 
             {/* Blue Home Yard */}
             <g>
-              <rect x={0} y={9} width={6} height={6} fill="var(--ludo-blue-dark)" opacity={0.35} stroke="var(--ludo-blue)" strokeWidth={0.06} rx={0.3} />
+              <rect x={0} y={9} width={6} height={6} fill="var(--ludo-blue)" stroke="var(--ludo-blue)" strokeWidth={0.06} rx={0.3} />
               <rect x={0.75} y={9.75} width={4.5} height={4.5} fill="#ffffff" rx={0.3} stroke="rgba(0,0,0,0.1)" strokeWidth={0.03} />
               <circle cx={2} cy={11} r={0.4} fill="var(--ludo-blue)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={3.5} cy={11} r={0.4} fill="var(--ludo-blue)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={2} cy={12.5} r={0.4} fill="var(--ludo-blue)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <circle cx={3.5} cy={12.5} r={0.4} fill="var(--ludo-blue)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
-              <text x={3} y={14.2} fill="var(--ludo-blue)" fontSize={0.7} fontWeight={800} textAnchor="middle" opacity={0.8}>BLUE</text>
+              <text x={3} y={14.2} fill="#ffffff" fontSize={0.7} fontWeight={900} textAnchor="middle" style={{ filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.4))' }}>BLUE</text>
             </g>
 
             {/* Start cell movement direction arrows */}
@@ -543,17 +541,17 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
             {/* Central Goal (Triangles) */}
             <g>
               {/* Red Goal */}
-              <polygon points="6,6 6,9 7.5,7.5" fill="var(--ludo-red-dark)" stroke="var(--ludo-red)" strokeWidth={0.04} />
+              <polygon points="6,6 6,9 7.5,7.5" fill="var(--ludo-red)" stroke="#1e293b" strokeWidth={0.04} />
               {/* Green Goal */}
-              <polygon points="6,6 9,6 7.5,7.5" fill="var(--ludo-green-dark)" stroke="var(--ludo-green)" strokeWidth={0.04} />
+              <polygon points="6,6 9,6 7.5,7.5" fill="var(--ludo-green)" stroke="#1e293b" strokeWidth={0.04} />
               {/* Yellow Goal */}
-              <polygon points="9,6 9,9 7.5,7.5" fill="var(--ludo-yellow-dark)" stroke="var(--ludo-yellow)" strokeWidth={0.04} />
+              <polygon points="9,6 9,9 7.5,7.5" fill="var(--ludo-yellow)" stroke="#1e293b" strokeWidth={0.04} />
               {/* Blue Goal */}
-              <polygon points="6,9 9,9 7.5,7.5" fill="var(--ludo-blue-dark)" stroke="var(--ludo-blue)" strokeWidth={0.04} />
+              <polygon points="6,9 9,9 7.5,7.5" fill="var(--ludo-blue)" stroke="#1e293b" strokeWidth={0.04} />
               {/* Central division lines */}
-              <line x1={6} y1={6} x2={9} y2={9} stroke="rgba(255,255,255,0.15)" strokeWidth={0.03} />
-              <line x1={6} y1={9} x2={9} y2={6} stroke="rgba(255,255,255,0.15)" strokeWidth={0.03} />
-              <circle cx={7.5} cy={7.5} r={0.45} fill="var(--bg-main)" stroke="rgba(255,255,255,0.2)" strokeWidth={0.03} />
+              <line x1={6} y1={6} x2={9} y2={9} stroke="#1e293b" strokeWidth={0.03} />
+              <line x1={6} y1={9} x2={9} y2={6} stroke="#1e293b" strokeWidth={0.03} />
+              <circle cx={7.5} cy={7.5} r={0.45} fill="#ffffff" stroke="#1e293b" strokeWidth={0.03} />
             </g>
           </>
         )}
