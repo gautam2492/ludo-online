@@ -337,7 +337,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
       <style>{`
         .board-container {
           width: 100%;
-          max-width: min(92vw, 520px);
+          max-width: min(92vw, calc(100dvh - 310px), 520px);
           aspect-ratio: 1 / 1;
           margin: 0 auto;
           display: flex;
@@ -348,19 +348,19 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
 
         @media (max-width: 767px) and (orientation: portrait) {
           .board-container {
-            max-width: min(92vw, calc(100dvh - 320px));
+            max-width: min(92vw, calc(100dvh - 310px));
           }
         }
 
         @media (min-width: 768px) and (orientation: portrait) {
           .board-container {
-            max-width: min(92vw, calc(100dvh - 290px));
+            max-width: min(92vw, calc(100dvh - 310px));
           }
         }
 
         @media (orientation: landscape) {
           .board-container {
-            max-width: min(95vw, calc(100dvh - 120px));
+            max-width: min(92vw, calc(100dvh - 310px));
           }
         }
 
