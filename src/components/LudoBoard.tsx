@@ -693,7 +693,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
             <g
               key={tokenKey}
               transform={`translate(${cx}, ${cy})`}
-              className={`token-element ${canMove ? 'token-element-active animate-bounce-movable' : 'animate-float-pawn'}`}
+              className={`token-element ${canMove ? 'token-element-active' : ''}`}
               onClick={() => canMove && onTokenClick(id)}
               onMouseEnter={() => canMove && setHoveredTokenId(tokenKey)}
               onMouseLeave={() => setHoveredTokenId(null)}
@@ -711,7 +711,7 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
               )}
               
               {/* Inner animated offset container for hop/bounce physics */}
-              <g className={isHopping ? 'animate-hop-step' : ''} style={{ transformOrigin: 'center bottom' }}>
+              <g className={`${isHopping ? 'animate-hop-step' : ''} ${canMove ? 'animate-bounce-movable' : 'animate-float-pawn'}`} style={{ transformOrigin: 'center bottom' }}>
                 {/* SVG Vector Shadow for 100% performant graphics rendering */}
                 <path
                   d="M -0.2,0.3 C -0.2,0.14 -0.08,0.04 -0.04,-0.04 C -0.08,-0.08 -0.08,-0.16 0.04,-0.2 C 0.16,-0.16 0.16,-0.08 0.12,-0.04 C 0.16,0.04 0.28,0.14 0.28,0.3 Z"
