@@ -1355,7 +1355,6 @@ export const App: React.FC = () => {
       <style>{`
         .app-container {
           height: 100vh;
-          height: 100dvh;
           display: flex;
           flex-direction: column;
           overflow: hidden;
@@ -1433,7 +1432,6 @@ export const App: React.FC = () => {
           overflow: hidden;
           box-sizing: border-box;
           height: calc(100vh - 64px);
-          height: calc(100dvh - 64px);
         }
 
         @media (min-width: 768px) {
@@ -1484,14 +1482,12 @@ export const App: React.FC = () => {
             gap: 32px;
             padding: 16px;
             height: calc(100vh - 64px);
-            height: calc(100dvh - 64px);
           }
 
           .board-section {
             flex: 1;
             max-height: 100%;
             max-width: min(100%, calc(100vh - 120px));
-            max-width: min(100%, calc(100dvh - 120px));
           }
 
           .game-column {
@@ -1653,7 +1649,6 @@ export const App: React.FC = () => {
           left: 0;
           width: 100vw;
           height: 100vh;
-          height: 100dvh;
           z-index: 9999;
           background: rgba(4, 6, 12, 0.85);
           backdrop-filter: blur(8px);

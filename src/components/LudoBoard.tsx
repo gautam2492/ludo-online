@@ -336,8 +336,8 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
     <div className={`board-container ${shakeBoard ? 'animate-camera-shake' : ''}`}>
       <style>{`
         .board-container {
-          width: min(92vw, calc(100dvh - 310px), 520px);
-          height: min(92vw, calc(100dvh - 310px), 520px);
+          width: min(92vw, calc(100vh - 310px), 520px);
+          height: min(92vw, calc(100vh - 310px), 520px);
           margin: 0 auto;
           display: flex;
           align-items: center;
@@ -347,22 +347,22 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
 
         @media (max-width: 767px) and (orientation: portrait) {
           .board-container {
-            width: min(92vw, calc(100dvh - 310px));
-            height: min(92vw, calc(100dvh - 310px));
+            width: min(92vw, calc(100vh - 310px));
+            height: min(92vw, calc(100vh - 310px));
           }
         }
 
         @media (min-width: 768px) and (orientation: portrait) {
           .board-container {
-            width: min(92vw, calc(100dvh - 310px));
-            height: min(92vw, calc(100dvh - 310px));
+            width: min(92vw, calc(100vh - 310px));
+            height: min(92vw, calc(100vh - 310px));
           }
         }
 
         @media (orientation: landscape) {
           .board-container {
-            width: min(92vw, calc(100dvh - 310px));
-            height: min(92vw, calc(100dvh - 310px));
+            width: min(92vw, calc(100vh - 310px));
+            height: min(92vw, calc(100vh - 310px));
           }
         }
 

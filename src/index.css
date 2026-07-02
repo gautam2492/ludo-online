@@ -278,25 +278,22 @@ body {
 
 /* Pawn Idle Breathing animation */
 @keyframes floatPawn {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-4px); }
-  100% { transform: translateY(0px); }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
 }
 
 .animate-float-pawn {
-  animation: floatPawn 2.2s ease-in-out infinite;
+  animation: floatPawn 3s ease-in-out infinite;
 }
 
-/* Movable Pawn scaling jump-bounce loop */
+/* Movable Pawn scaling pulse glow loop */
 @keyframes bounceMovable {
-  0% { transform: translateY(0px) scale(1.08); }
-  35% { transform: translateY(-7px) scale(1.08); }
-  70% { transform: translateY(0px) scale(1.08); }
-  100% { transform: translateY(0px) scale(1.08); }
+  0%, 100% { transform: scale(1.06); filter: drop-shadow(0 0 2px rgba(255,255,255,0.4)); }
+  50% { transform: scale(1.18); filter: drop-shadow(0 0 6px rgba(255,255,255,0.7)); }
 }
 
 .animate-bounce-movable {
-  animation: bounceMovable 1s cubic-bezier(0.28, 0.84, 0.42, 1) infinite;
+  animation: bounceMovable 1.4s ease-in-out infinite;
 }
 
 /* Parabolic walk step translations (handled dynamically but keyframe fallback for smooth hopping) */
