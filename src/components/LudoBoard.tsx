@@ -200,7 +200,8 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
   const renderStar = (x: number, y: number, color: string = '#ffffff') => {
     const cx = x + 0.5;
     const cy = y + 0.5;
-    // Standard star path in 1x1 cell
+    const isStandardStar = color === '#94a3b8';
+    
     return (
       <polygon
         key={`star-${x}-${y}`}
@@ -216,8 +217,11 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
           ${cx - 0.28},${cy - 0.09}
           ${cx - 0.08},${cy - 0.09}
         `}
-        fill={color}
-        opacity={0.7}
+        fill={isStandardStar ? 'rgba(0,0,0,0.06)' : color}
+        stroke={isStandardStar ? 'rgba(0,0,0,0.22)' : 'rgba(0,0,0,0.15)'}
+        strokeWidth={0.025}
+        strokeLinejoin="round"
+        opacity={isStandardStar ? 0.65 : 0.8}
       />
     );
   };
@@ -486,46 +490,52 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
             {/* Red Home Yard */}
             <g>
               <rect x={0} y={0} width={6} height={6} fill="var(--ludo-red-dark)" opacity={0.35} stroke="var(--ludo-red)" strokeWidth={0.06} rx={0.3} />
-              <rect x={0.75} y={0.75} width={4.5} height={4.5} fill="var(--bg-main)" opacity={0.8} rx={0.2} />
-              <circle cx={2} cy={2} r={0.5} fill="var(--ludo-red-dark)" opacity={0.4} stroke="var(--ludo-red)" strokeWidth={0.02} />
-              <circle cx={3.5} cy={2} r={0.5} fill="var(--ludo-red-dark)" opacity={0.4} stroke="var(--ludo-red)" strokeWidth={0.02} />
-              <circle cx={2} cy={3.5} r={0.5} fill="var(--ludo-red-dark)" opacity={0.4} stroke="var(--ludo-red)" strokeWidth={0.02} />
-              <circle cx={3.5} cy={3.5} r={0.5} fill="var(--ludo-red-dark)" opacity={0.4} stroke="var(--ludo-red)" strokeWidth={0.02} />
+              <rect x={0.75} y={0.75} width={4.5} height={4.5} fill="#ffffff" rx={0.3} stroke="rgba(0,0,0,0.1)" strokeWidth={0.03} />
+              <circle cx={2} cy={2} r={0.4} fill="var(--ludo-red)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={3.5} cy={2} r={0.4} fill="var(--ludo-red)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={2} cy={3.5} r={0.4} fill="var(--ludo-red)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={3.5} cy={3.5} r={0.4} fill="var(--ludo-red)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <text x={3} y={5.2} fill="var(--ludo-red)" fontSize={0.7} fontWeight={800} textAnchor="middle" opacity={0.8}>RED</text>
             </g>
 
             {/* Green Home Yard */}
             <g>
               <rect x={9} y={0} width={6} height={6} fill="var(--ludo-green-dark)" opacity={0.35} stroke="var(--ludo-green)" strokeWidth={0.06} rx={0.3} />
-              <rect x={9.75} y={0.75} width={4.5} height={4.5} fill="var(--bg-main)" opacity={0.8} rx={0.2} />
-              <circle cx={11} cy={2} r={0.5} fill="var(--ludo-green-dark)" opacity={0.4} stroke="var(--ludo-green)" strokeWidth={0.02} />
-              <circle cx={12.5} cy={2} r={0.5} fill="var(--ludo-green-dark)" opacity={0.4} stroke="var(--ludo-green)" strokeWidth={0.02} />
-              <circle cx={11} cy={3.5} r={0.5} fill="var(--ludo-green-dark)" opacity={0.4} stroke="var(--ludo-green)" strokeWidth={0.02} />
-              <circle cx={12.5} cy={3.5} r={0.5} fill="var(--ludo-green-dark)" opacity={0.4} stroke="var(--ludo-green)" strokeWidth={0.02} />
+              <rect x={9.75} y={0.75} width={4.5} height={4.5} fill="#ffffff" rx={0.3} stroke="rgba(0,0,0,0.1)" strokeWidth={0.03} />
+              <circle cx={11} cy={2} r={0.4} fill="var(--ludo-green)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={12.5} cy={2} r={0.4} fill="var(--ludo-green)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={11} cy={3.5} r={0.4} fill="var(--ludo-green)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={12.5} cy={3.5} r={0.4} fill="var(--ludo-green)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <text x={12} y={5.2} fill="var(--ludo-green)" fontSize={0.7} fontWeight={800} textAnchor="middle" opacity={0.8}>GREEN</text>
             </g>
 
             {/* Yellow Home Yard */}
             <g>
               <rect x={9} y={9} width={6} height={6} fill="var(--ludo-yellow-dark)" opacity={0.35} stroke="var(--ludo-yellow)" strokeWidth={0.06} rx={0.3} />
-              <rect x={9.75} y={9.75} width={4.5} height={4.5} fill="var(--bg-main)" opacity={0.8} rx={0.2} />
-              <circle cx={11} cy={11} r={0.5} fill="var(--ludo-yellow-dark)" opacity={0.4} stroke="var(--ludo-yellow)" strokeWidth={0.02} />
-              <circle cx={12.5} cy={11} r={0.5} fill="var(--ludo-yellow-dark)" opacity={0.4} stroke="var(--ludo-yellow)" strokeWidth={0.02} />
-              <circle cx={11} cy={12.5} r={0.5} fill="var(--ludo-yellow-dark)" opacity={0.4} stroke="var(--ludo-yellow)" strokeWidth={0.02} />
-              <circle cx={12.5} cy={12.5} r={0.5} fill="var(--ludo-yellow-dark)" opacity={0.4} stroke="var(--ludo-yellow)" strokeWidth={0.02} />
+              <rect x={9.75} y={9.75} width={4.5} height={4.5} fill="#ffffff" rx={0.3} stroke="rgba(0,0,0,0.1)" strokeWidth={0.03} />
+              <circle cx={11} cy={11} r={0.4} fill="var(--ludo-yellow)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={12.5} cy={11} r={0.4} fill="var(--ludo-yellow)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={11} cy={12.5} r={0.4} fill="var(--ludo-yellow)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={12.5} cy={12.5} r={0.4} fill="var(--ludo-yellow)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <text x={12} y={14.2} fill="var(--ludo-yellow)" fontSize={0.7} fontWeight={800} textAnchor="middle" opacity={0.8}>YELLOW</text>
             </g>
 
             {/* Blue Home Yard */}
             <g>
               <rect x={0} y={9} width={6} height={6} fill="var(--ludo-blue-dark)" opacity={0.35} stroke="var(--ludo-blue)" strokeWidth={0.06} rx={0.3} />
-              <rect x={0.75} y={9.75} width={4.5} height={4.5} fill="var(--bg-main)" opacity={0.8} rx={0.2} />
-              <circle cx={2} cy={11} r={0.5} fill="var(--ludo-blue-dark)" opacity={0.4} stroke="var(--ludo-blue)" strokeWidth={0.02} />
-              <circle cx={3.5} cy={11} r={0.5} fill="var(--ludo-blue-dark)" opacity={0.4} stroke="var(--ludo-blue)" strokeWidth={0.02} />
-              <circle cx={2} cy={12.5} r={0.5} fill="var(--ludo-blue-dark)" opacity={0.4} stroke="var(--ludo-blue)" strokeWidth={0.02} />
-              <circle cx={3.5} cy={12.5} r={0.5} fill="var(--ludo-blue-dark)" opacity={0.4} stroke="var(--ludo-blue)" strokeWidth={0.02} />
+              <rect x={0.75} y={9.75} width={4.5} height={4.5} fill="#ffffff" rx={0.3} stroke="rgba(0,0,0,0.1)" strokeWidth={0.03} />
+              <circle cx={2} cy={11} r={0.4} fill="var(--ludo-blue)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={3.5} cy={11} r={0.4} fill="var(--ludo-blue)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={2} cy={12.5} r={0.4} fill="var(--ludo-blue)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
+              <circle cx={3.5} cy={12.5} r={0.4} fill="var(--ludo-blue)" stroke="rgba(0,0,0,0.12)" strokeWidth={0.02} />
               <text x={3} y={14.2} fill="var(--ludo-blue)" fontSize={0.7} fontWeight={800} textAnchor="middle" opacity={0.8}>BLUE</text>
             </g>
+
+            {/* Start cell movement direction arrows */}
+            <path d="M 0.15,6.5 L 0.85,6.5 M 0.55,6.2 L 0.85,6.5 L 0.55,6.8" stroke="var(--ludo-red)" strokeWidth={0.07} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.85} />
+            <path d="M 8.5,0.15 L 8.5,0.85 M 8.2,0.55 L 8.5,0.85 L 8.8,0.55" stroke="var(--ludo-green)" strokeWidth={0.07} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.85} />
+            <path d="M 14.85,8.5 L 14.15,8.5 M 14.45,8.2 L 14.15,8.5 L 14.45,8.8" stroke="var(--ludo-yellow)" strokeWidth={0.07} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.85} />
+            <path d="M 6.5,14.85 L 6.5,14.15 M 6.2,14.45 L 6.5,14.15 L 6.8,14.45" stroke="var(--ludo-blue)" strokeWidth={0.07} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.85} />
 
             {/* Safe Stars */}
             {stars}
@@ -562,21 +572,23 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
             const cx = coord.x + (isGridPosition ? 0.5 : 0);
             const cy = coord.y + (isGridPosition ? 0.5 : 0);
             return (
-              <g className="token-ghost">
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={0.35}
+              <g className="token-ghost" transform={`translate(${cx}, ${cy})`} opacity={0.65}>
+                {/* Pawn Base */}
+                <path
+                  d="M -0.24,0.26 C -0.24,0.1 -0.12,0 -0.08,-0.08 C -0.12,-0.12 -0.12,-0.2 0,-0.24 C 0.12,-0.2 0.12,-0.12 0.08,-0.08 C 0.12,0 0.24,0.1 0.24,0.26 Z"
                   fill="none"
                   stroke={colorMap[hoveredToken.color]}
-                  strokeWidth={0.07}
+                  strokeWidth={0.05}
+                  strokeLinejoin="round"
                 />
+                {/* Pawn Head */}
                 <circle
-                  cx={cx}
-                  cy={cy}
-                  r={0.16}
-                  fill={colorMap[hoveredToken.color]}
-                  opacity={0.6}
+                  cx={0}
+                  cy={-0.24}
+                  r={0.15}
+                  fill="none"
+                  stroke={colorMap[hoveredToken.color]}
+                  strokeWidth={0.04}
                 />
               </g>
             );
@@ -617,38 +629,57 @@ export const LudoBoard: React.FC<LudoBoardProps> = ({
                   style={{ cursor: 'pointer' }}
                 />
               )}
-              {/* SVG Vector Shadow for 100% performant graphics rendering without CSS filters */}
-              <circle
-                cx={0.04}
-                cy={0.04}
-                r={0.34}
-                fill="rgba(0, 0, 0, 0.35)"
+              {/* SVG Vector Shadow for 100% performant graphics rendering */}
+              <path
+                d="M -0.2,0.3 C -0.2,0.14 -0.08,0.04 -0.04,-0.04 C -0.08,-0.08 -0.08,-0.16 0.04,-0.2 C 0.16,-0.16 0.16,-0.08 0.12,-0.04 C 0.16,0.04 0.28,0.14 0.28,0.3 Z"
+                fill="rgba(0,0,0,0.3)"
                 style={{ pointerEvents: 'none' }}
               />
-              {/* Token Base */}
               <circle
-                cx={0}
-                cy={0}
-                r={0.34}
-                fill={colorMap[color]}
-                className={`token-circle ${canMove ? 'token-circle-active' : ''}`}
+                cx={0.04}
+                cy={-0.2}
+                r={0.15}
+                fill="rgba(0,0,0,0.3)"
+                style={{ pointerEvents: 'none' }}
               />
               
-              {/* Glossy overlay */}
+              {/* Pawn Base */}
+              <path
+                d="M -0.24,0.26 C -0.24,0.1 -0.12,0 -0.08,-0.08 C -0.12,-0.12 -0.12,-0.2 0,-0.24 C 0.12,-0.2 0.12,-0.12 0.08,-0.08 C 0.12,0 0.24,0.1 0.24,0.26 Z"
+                fill={colorMap[color]}
+                stroke="#ffffff"
+                strokeWidth={0.045}
+                strokeLinejoin="round"
+                className={canMove ? 'token-circle-active' : ''}
+              />
+              
+              {/* Pawn Head */}
               <circle
-                cx={-0.08}
-                cy={-0.08}
-                r={0.09}
-                className="token-inner"
+                cx={0}
+                cy={-0.24}
+                r={0.15}
+                fill={colorMap[color]}
+                stroke="#ffffff"
+                strokeWidth={0.04}
+              />
+              
+              {/* Glossy shine overlay */}
+              <circle
+                cx={-0.05}
+                cy={-0.28}
+                r={0.05}
+                fill="#ffffff"
+                opacity={0.65}
+                style={{ pointerEvents: 'none' }}
               />
 
               {/* Unique Number tag */}
               <text
                 x={0}
-                y={0.1}
+                y={0.14}
                 fill="#ffffff"
-                fontSize={0.28}
-                fontWeight={800}
+                fontSize={0.22}
+                fontWeight={900}
                 textAnchor="middle"
                 style={{ pointerEvents: 'none', userSelect: 'none' }}
               >

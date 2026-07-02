@@ -9,6 +9,9 @@ export interface Player {
   isBot: boolean;
   peerId?: string;
   wins?: number;
+  avatarUrl?: string;
+  coins?: number;
+  level?: number;
 }
 
 export interface Token {

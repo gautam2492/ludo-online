@@ -3,11 +3,12 @@ import type { Player, PlayerColor } from '../types';
 import { Play, Copy, Check, User, Hash, Cpu, RefreshCw, Info } from 'lucide-react';
 
 import { audio } from '../utils/audio';
+import { AVATAR_OPTIONS, getAvatarById } from '../utils/avatarHelper';
 
 interface LobbyProps {
-  onHost: (name: string, color: PlayerColor) => void;
-  onJoin: (name: string, color: PlayerColor, roomId: string) => void;
-  onOffline: (name: string, color: PlayerColor) => void;
+  onHost: (name: string, color: PlayerColor, avatar: string, coins: number, level: number) => void;
+  onJoin: (name: string, color: PlayerColor, roomId: string, avatar: string, coins: number, level: number) => void;
+  onOffline: (name: string, color: PlayerColor, avatar: string, coins: number, level: number) => void;
   players: Player[];
   roomId: string;
   isHost: boolean;
@@ -38,6 +39,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   const [targetRoomId, setTargetRoomId] = useState('');
   const [copied, setCopied] = useState(false);
   const [mode, setMode] = useState<'selection' | 'hosting' | 'joining'>('selection');
+  const [selectedAvatar, setSelectedAvatar] = useState(() => localStorage.getItem('ludo_player_avatar') || 'boy');
 
   const [coins, setCoins] = useState(() => Number(localStorage.getItem('ludo_player_coins') || '100'));
   const [level, setLevel] = useState(() => Number(localStorage.getItem('ludo_player_level') || '1'));
@@ -84,7 +86,7 @@ export const Lobby: React.FC<LobbyProps> = ({
     if (!name.trim()) return;
     localStorage.setItem('ludo_player_name', name.trim());
     audio.playMove();
-    onHost(name.trim(), selectedColor);
+    onHost(name.trim(), selectedColor, selectedAvatar, coins, level);
     setMode('hosting');
   };
 
@@ -92,7 +94,7 @@ export const Lobby: React.FC<LobbyProps> = ({
     if (!name.trim()) return;
     localStorage.setItem('ludo_player_name', name.trim());
     audio.playMove();
-    onOffline(name.trim(), selectedColor);
+    onOffline(name.trim(), selectedColor, selectedAvatar, coins, level);
     setMode('hosting');
   };
 
@@ -100,7 +102,7 @@ export const Lobby: React.FC<LobbyProps> = ({
     if (!name.trim() || !targetRoomId.trim()) return;
     localStorage.setItem('ludo_player_name', name.trim());
     audio.playMove();
-    onJoin(name.trim(), selectedColor, targetRoomId.trim());
+    onJoin(name.trim(), selectedColor, targetRoomId.trim(), selectedAvatar, coins, level);
     setMode('joining');
   };
 
@@ -309,8 +311,8 @@ export const Lobby: React.FC<LobbyProps> = ({
             <div className="profile-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 4, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 42, height: 42, borderRadius: '50%', fontSize: '1.05rem', fontWeight: 800, background: 'linear-gradient(135deg, var(--ludo-red), var(--ludo-blue))', border: '2px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                    {name ? name.substring(0, 2).toUpperCase() : 'P'}
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', fontSize: '1.5rem', background: getAvatarById(selectedAvatar).bg, border: '2px solid #f6bb09', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 8px rgba(246,187,9,0.3)', flexShrink: 0 }}>
+                    {getAvatarById(selectedAvatar).emoji}
                   </div>
                   <div>
                     <div style={{ fontWeight: 800, color: 'white', fontSize: '1rem' }}>{name || 'Guest Player'}</div>
@@ -372,6 +374,42 @@ export const Lobby: React.FC<LobbyProps> = ({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
+              </div>
+            </div>
+
+            <div className="input-group">
+              <label className="input-label">Select Avatar</label>
+              <div style={{ display: 'flex', gap: 10, overflowX: 'auto', padding: '4px 0', scrollbarWidth: 'none' }}>
+                {AVATAR_OPTIONS.map((av) => (
+                  <button
+                    key={av.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedAvatar(av.id);
+                      localStorage.setItem('ludo_player_avatar', av.id);
+                      audio.playMove();
+                    }}
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '12px',
+                      background: av.bg,
+                      border: selectedAvatar === av.id ? '3px solid #f6bb09' : '2px solid rgba(255,255,255,0.1)',
+                      boxShadow: selectedAvatar === av.id ? '0 0 10px rgba(246,187,9,0.5)' : 'none',
+                      fontSize: '1.6rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      transition: 'all 0.2s ease',
+                      transform: selectedAvatar === av.id ? 'scale(1.06)' : 'scale(1)'
+                    }}
+                    title={av.label}
+                  >
+                    {av.emoji}
+                  </button>
+                ))}
               </div>
             </div>
 

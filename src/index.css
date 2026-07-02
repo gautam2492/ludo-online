@@ -62,7 +62,11 @@ body {
   display: flex;
   min-height: 100vh;
   width: 100vw;
-  background: radial-gradient(circle at 50% 50%, hsl(222, 40%, 12%) 0%, #06080e 100%);
+  background: 
+    radial-gradient(circle at 50% 50%, rgba(18, 28, 48, 0.98) 0%, rgba(6, 8, 14, 0.99) 100%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1.5px, transparent 1.5px, transparent 18px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1.5px, transparent 1.5px, transparent 18px);
+  background-blend-mode: overlay;
   overflow-x: hidden;
 }
 

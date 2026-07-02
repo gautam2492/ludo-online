@@ -5,6 +5,7 @@ import LudoBoard from './components/LudoBoard';
 import Dice from './components/Dice';
 import peerService from './services/peerService';
 import { audio } from './utils/audio';
+import { getAvatarById } from './utils/avatarHelper';
 import {
   isValidMove,
   getNextPosition,
@@ -686,7 +687,7 @@ export const App: React.FC = () => {
 
       case 'JOIN_ROOM':
         if (isHost) {
-          const { id, name, peerId } = msg.payload;
+          const { id, name, peerId, avatar, coins, level } = msg.payload;
           setGameState((prev) => {
             // Check if player already exists
             const existingPlayer = prev.players.find((p) => p.id === id);
@@ -694,7 +695,7 @@ export const App: React.FC = () => {
               // Update connection state and peerId if needed
               const updatedPlayers = prev.players.map((p) => {
                 if (p.id === id) {
-                  return { ...p, isConnected: true, peerId };
+                  return { ...p, isConnected: true, peerId, avatarUrl: avatar, coins: coins || 100, level: level || 1 };
                 }
                 return p;
               });
@@ -718,7 +719,10 @@ export const App: React.FC = () => {
               isHost: false,
               isConnected: true,
               isBot: false,
-              peerId
+              peerId,
+              avatarUrl: avatar,
+              coins: coins || 100,
+              level: level || 1
             };
 
             const updatedPlayers = [...prev.players, newPlayer];
@@ -801,7 +805,7 @@ export const App: React.FC = () => {
   };
 
   // Host setup triggers
-  const hostRoom = (hostName: string, hostColor: PlayerColor) => {
+  const hostRoom = (hostName: string, hostColor: PlayerColor, avatar: string, coins: number, level: number) => {
     setIsConnecting(true);
     peerService.initHost(
       hostName,
@@ -819,7 +823,10 @@ export const App: React.FC = () => {
           isHost: true,
           isConnected: true,
           isBot: false,
-          peerId: id
+          peerId: id,
+          avatarUrl: avatar,
+          coins,
+          level
         };
 
         setGameState((prev) => ({
@@ -838,7 +845,7 @@ export const App: React.FC = () => {
   };
 
   // Play Offline Single Player mode
-  const playOffline = (playerName: string, playerColor: PlayerColor) => {
+  const playOffline = (playerName: string, playerColor: PlayerColor, avatar: string, coins: number, level: number) => {
     setIsConnecting(true);
     peerService.initOffline(playerName, (id) => {
       setRoomId(id);
@@ -853,7 +860,10 @@ export const App: React.FC = () => {
         isHost: true,
         isConnected: true,
         isBot: false,
-        peerId: id
+        peerId: id,
+        avatarUrl: avatar,
+        coins,
+        level
       };
 
       setGameState((prev) => ({
@@ -884,7 +894,7 @@ export const App: React.FC = () => {
   };
 
   // Guest setup triggers
-  const joinRoom = (guestName: string, _guestColor: PlayerColor, code: string) => {
+  const joinRoom = (guestName: string, _guestColor: PlayerColor, code: string, avatar: string, coins: number, level: number) => {
     setIsConnecting(true);
     setErrorMsg('');
     peerService.initGuest(
@@ -918,7 +928,10 @@ export const App: React.FC = () => {
               type: 'JOIN_ROOM',
               payload: {
                 id: myId,
-                name: guestName
+                name: guestName,
+                avatar,
+                coins,
+                level
               }
             });
             return currentState;
@@ -945,13 +958,21 @@ export const App: React.FC = () => {
       const botNames = ['RoboRoller', 'ByteBiter', 'CyberPawn', 'AI-Player'];
       const botName = botNames[Math.floor(Math.random() * botNames.length)] + ` (${freeColor.toUpperCase()})`;
 
+      const botAvatars = ['robot', 'ninja', 'wizard'];
+      const botAvatar = botAvatars[Math.floor(Math.random() * botAvatars.length)];
+      const botCoins = Math.floor(Math.random() * 1800) + 400;
+      const botLevel = Math.floor(Math.random() * 6) + 1;
+
       const botPlayer: Player = {
         id: 'bot_' + Math.random().toString(36).substr(2, 9),
         name: botName,
         color: freeColor,
         isHost: false,
         isConnected: true,
-        isBot: true
+        isBot: true,
+        avatarUrl: botAvatar,
+        coins: botCoins,
+        level: botLevel
       };
 
       const nextState = {
@@ -1420,88 +1441,307 @@ export const App: React.FC = () => {
             opacity: 0;
           }
         }
+
+        .winner-scroll-outer {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          height: 100dvh;
+          z-index: 9999;
+          background: rgba(4, 6, 12, 0.85);
+          backdrop-filter: blur(8px);
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          padding: 16px;
+          overflow: hidden;
+        }
+
+        .winner-scroll-card {
+          width: 100%;
+          max-width: 380px;
+          background: linear-gradient(to bottom, #11306b 0%, #061537 100%);
+          border: 4px solid #f6bb09;
+          border-radius: 24px;
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(246, 187, 9, 0.3);
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 68px 20px 24px 20px;
+          box-sizing: border-box;
+          animation: slideUpScroll 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes slideUpScroll {
+          0% {
+            opacity: 0;
+            transform: translateY(30px) scale(0.9);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        .scroll-header-banner {
+          position: absolute;
+          top: -28px;
+          width: 90%;
+          height: 56px;
+          background: linear-gradient(to right, #b40a1b 0%, #e62237 30%, #e62237 70%, #b40a1b 100%);
+          border: 3px solid #f6bb09;
+          border-radius: 28px;
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+        }
+
+        .scroll-header-text {
+          font-size: 1.8rem;
+          font-weight: 900;
+          color: #fff;
+          text-shadow: 2px 2px 0px #b40a1b, -2px -2px 0px #b40a1b, 2px -2px 0px #b40a1b, -2px 2px 0px #b40a1b, 0 4px 8px rgba(0, 0, 0, 0.8);
+          letter-spacing: 0.05em;
+          font-style: italic;
+        }
       `}</style>
 
       {/* Winner Screen Overlay */}
-      {gameState.winnerColor && (
-        <div className="winner-banner animate-winner" style={{ padding: '30px', maxWidth: '420px', width: '90%' }}>
-          <h2
-            className="winner-title"
-            style={{
-              color:
-                gameState.winnerColor === 'red'
-                  ? 'var(--ludo-red)'
-                  : gameState.winnerColor === 'green'
-                  ? 'var(--ludo-green)'
-                  : gameState.winnerColor === 'yellow'
-                  ? 'var(--ludo-yellow)'
-                  : 'var(--ludo-blue)',
-              textShadow: `0 0 30px var(--ludo-${gameState.winnerColor}-glow)`
-            }}
-          >
-            {gameState.players.find((p) => p.color === gameState.winnerColor)?.name} Wins!
-          </h2>
-          <p className="text-sm text-slate-400" style={{ margin: '4px 0 20px 0' }}>All tokens successfully made it home.</p>
-
-          {/* Session Leaderboard */}
-          <div style={{ margin: '10px 0 24px 0', width: '100%' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--neutral-300)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              🏆 Session Leaderboard
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {[...gameState.players]
-                .sort((a, b) => (b.wins || 0) - (a.wins || 0))
-                .map((p, idx) => (
-                  <div
-                    key={p.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '8px 14px',
-                      background: p.color === gameState.winnerColor ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
-                      borderRadius: '8px',
-                      border: p.color === gameState.winnerColor ? `1px solid var(--ludo-${p.color})` : '1px solid rgba(255,255,255,0.06)'
-                    }}
-                  >
-                    <span style={{ color: `var(--ludo-${p.color})`, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>#{idx + 1}</span>
-                      <span>{p.name}</span>
-                    </span>
-                    <span style={{ fontWeight: 800, color: 'white', fontSize: '0.9rem' }}>
-                      {p.wins || 0} { (p.wins || 0) === 1 ? 'Win' : 'Wins' }
+      {gameState.winnerColor && (() => {
+        const winnerPlayer = gameState.players.find((p) => p.color === gameState.winnerColor);
+        const winnerAvatar = getAvatarById(winnerPlayer?.avatarUrl);
+        const others = gameState.players.filter((p) => p.color !== gameState.winnerColor);
+        
+        return (
+          <div className="winner-scroll-outer">
+            {/* Background Sparkles & Fireworks effect */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.08) 1px, transparent 1px)',
+              backgroundSize: '24px 24px',
+              opacity: 0.8,
+              pointerEvents: 'none'
+            }} />
+            
+            {/* Golden Frame Scroll Card */}
+            <div className="winner-scroll-card">
+              {/* Header Banner */}
+              <div className="scroll-header-banner">
+                <span className="scroll-header-text">Congratulations!</span>
+              </div>
+              
+              {/* Logo / Subheader */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 20 }}>
+                <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#f6bb09', textShadow: '0 2px 4px rgba(0,0,0,0.6)', letterSpacing: '0.1em' }}>
+                  LUDO P2P
+                </span>
+                <span style={{ fontSize: '0.65rem', color: '#60a5fa', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', marginTop: 2 }}>
+                  Best Free Multiplayer Game
+                </span>
+              </div>
+              
+              {/* Leaderboard Scroll Rows */}
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+                {/* Winner #1 Row */}
+                {winnerPlayer && (
+                  <div className="winner-scroll-row first-place" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '10px 14px',
+                    borderRadius: '16px',
+                    border: '3px solid #f6bb09',
+                    background: 'rgba(246, 187, 9, 0.12)',
+                    boxShadow: '0 0 15px rgba(246, 187, 9, 0.3)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ position: 'relative', width: 44, height: 44, borderRadius: '50%', background: winnerAvatar.bg, border: '2px solid #ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
+                        <span style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%) rotate(-5deg)', fontSize: '1.3rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }}>👑</span>
+                        {winnerAvatar.emoji}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#ffffff', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {winnerPlayer.name}
+                          <span style={{ background: '#f6bb09', color: '#061537', fontSize: '0.6rem', fontWeight: 950, padding: '1px 4px', borderRadius: 4 }}>#1</span>
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: 700 }}>Lvl {winnerPlayer.level || 1} Champion</div>
+                      </div>
+                    </div>
+                    
+                    <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#f6bb09', background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)', padding: '4px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      🪙 +190
                     </span>
                   </div>
-                ))}
+                )}
+                
+                {/* Losers/Other players */}
+                {others.map((p) => {
+                  const av = getAvatarById(p.avatarUrl);
+                  return (
+                    <div key={p.id} className="winner-scroll-row" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 14px',
+                      borderRadius: '16px',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      background: 'rgba(255, 255, 255, 0.03)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: av.bg, border: `2px solid var(--ludo-${p.color})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>
+                          {av.emoji}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--neutral-300)' }}>
+                            {p.name}
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--neutral-500)', fontWeight: 600 }}>Lvl {p.level || 1} Player</div>
+                        </div>
+                      </div>
+                      
+                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Lost
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Ludo King circular reward badges */}
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', margin: '8px 0 24px 0', width: '100%', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(to bottom, #d97706, #92400e)', border: '2px solid #f6bb09', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 8px rgba(0,0,0,0.3)' }}>🥇</div>
+                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 800 }}>+10</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(to bottom, #2563eb, #1e40af)', border: '2px solid #60a5fa', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 8px rgba(0,0,0,0.3)' }}>🧲</div>
+                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 800 }}>+3</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(to bottom, #dc2626, #991b1b)', border: '2px solid #f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 8px rgba(0,0,0,0.3)' }}>🥊</div>
+                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 800 }}>-1</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(to bottom, #059669, #065f46)', border: '2px solid #34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 8px rgba(0,0,0,0.3)' }}>👍</div>
+                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 800 }}>10</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(to bottom, #b45309, #78350f)', border: '2px solid #fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', boxShadow: '0 4px 8px rgba(0,0,0,0.3)' }}>👎</div>
+                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 800 }}>3</span>
+                </div>
+              </div>
+              
+              {/* Bottom Actions Row */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 14 }}>
+                {/* Home/Lobby (Left Circular) */}
+                <button
+                  onClick={returnToLobbyState}
+                  style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(to bottom, #3b82f6, #1d4ed8)',
+                    border: '3px solid #ffffff',
+                    boxShadow: '0 4px 10px rgba(29, 78, 216, 0.4)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.4rem',
+                    color: 'white',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Return to Main Menu"
+                >
+                  🏠
+                </button>
+                
+                {/* Play Again Scroll / Room Code Button */}
+                <div style={{ flex: 1 }}>
+                  {isHost ? (
+                    <button
+                      onClick={restartGame}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        borderRadius: '25px',
+                        background: 'linear-gradient(to bottom, #f59e0b, #d97706)',
+                        border: '3px solid #ffffff',
+                        boxShadow: '0 4px 12px rgba(217, 119, 6, 0.4)',
+                        color: 'white',
+                        fontWeight: 900,
+                        fontSize: '0.9rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      Play Again
+                    </button>
+                  ) : (
+                    <div style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '25px',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1.5px solid rgba(255,255,255,0.08)',
+                      color: 'var(--neutral-400)',
+                      fontWeight: 800,
+                      fontSize: '0.75rem',
+                      textAlign: 'center',
+                      lineHeight: '1.3'
+                    }}>
+                      Waiting for host to restart match...
+                    </div>
+                  )}
+                </div>
+                
+                {/* Share Code (Right Circular) */}
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(roomId);
+                    audio.playMove();
+                    alert('Room ID copied to clipboard!');
+                  }}
+                  style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(to bottom, #10b981, #047857)',
+                    border: '3px solid #ffffff',
+                    boxShadow: '0 4px 10px rgba(4, 120, 87, 0.4)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.3rem',
+                    color: 'white',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Copy Room ID"
+                >
+                  🔗
+                </button>
+              </div>
             </div>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
-            {isHost ? (
-              <>
-                <button className="glass-button glow-green" style={{ width: '100%', padding: '12px' }} onClick={restartGame}>
-                  Play Again (Instant Restart)
-                </button>
-                <button className="glass-button glow-blue" style={{ width: '100%', padding: '12px' }} onClick={returnToLobbyState}>
-                  Configure Match / Add Bots
-                </button>
-                <button className="glass-button text-red-400" style={{ width: '100%', padding: '12px' }} onClick={leaveGame}>
-                  <LogOut size={16} /> Close Game Room
-                </button>
-              </>
-            ) : (
-              <>
-                <div className="text-center text-sm text-slate-400 py-2">
-                  Waiting for host to restart match...
-                </div>
-                <button className="glass-button text-red-400" style={{ width: '100%', padding: '12px' }} onClick={leaveGame}>
-                  <LogOut size={16} /> Leave Room
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Top Header */}
       <header className="header">
@@ -1731,18 +1971,20 @@ export const App: React.FC = () => {
                           width: 32,
                           height: 32,
                           borderRadius: '50%',
-                          background: `var(--ludo-${p.color}-dark)`,
-                          border: `2.5px solid var(--ludo-${p.color})`,
+                          background: getAvatarById(p.avatarUrl).bg,
+                          border: isActive ? '2px solid #22c55e' : `2px solid var(--ludo-${p.color})`,
+                          boxShadow: isActive ? '0 0 8px rgba(34, 197, 94, 0.6)' : 'none',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontWeight: 800,
-                          fontSize: '0.8rem',
+                          fontSize: '1.15rem',
                           color: 'white',
-                          zIndex: 2
+                          zIndex: 2,
+                          transform: isActive ? 'scale(1.08)' : 'scale(1)',
+                          transition: 'all 0.2s ease'
                         }}
                       >
-                        {p.name.substring(0, 2).toUpperCase()}
+                        {getAvatarById(p.avatarUrl).emoji}
                       </div>
                     </div>
 
@@ -1750,8 +1992,11 @@ export const App: React.FC = () => {
                       <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'left' }}>
                         {p.name} {isMe && '(You)'}
                       </span>
-                      <span style={{ fontSize: '0.7rem', color: p.isConnected ? '#4ade80' : '#ef4444', fontWeight: 600 }}>
-                        {p.isBot ? '🤖 Bot' : p.isConnected ? '🟢 Online' : '🔴 Left'}
+                      <span style={{ fontSize: '0.7rem', color: '#f59e0b', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span>🪙 {p.coins || 100}</span>
+                        <span style={{ opacity: 0.5 }}>•</span>
+                        <span style={{ color: 'var(--neutral-400)' }}>Lvl {p.level || 1}</span>
+                        {p.isBot && <span style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: 4, fontSize: '0.6rem' }}>BOT</span>}
                       </span>
                     </div>
 
