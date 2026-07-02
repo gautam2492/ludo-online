@@ -2109,7 +2109,7 @@ export const App: React.FC = () => {
       ) : (
         <main className="main-game">
           {/* Centered Board & Controls */}
-          <div className="game-column" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', maxWidth: '520px', width: '100%' }}>
+          <div className="game-column" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', maxWidth: '520px', width: '100%', height: '100%', maxHeight: '100%' }}>
             
             {/* Top Row Players HUD (Green & Yellow) */}
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', padding: '0 4px', gap: '8px' }}>
